@@ -1,0 +1,46 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div>
+    <h1>Good <%= new Date().getHours() < 11 ? 'morning' : new Date().getHours() < 15 ? 'afternoon' : 'evening' %>, <%= user.name.split(' ')[0] %></h1>
+    <div class="sub"><%= new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></div>
+  </div>
+  <div class="actions"><a class="btn" href="/app/transactions/new"><%- include('../partials/icon', { name: 'plus' }) %> New wash</a></div>
+</div>
+
+<div class="kpis">
+  <div class="kpi k-dark"><div class="label">Revenue today (paid)</div><div class="value mono"><%= rupiah(stats.revenue) %></div></div>
+  <div class="kpi k-vanilla"><div class="label">Vehicles today</div><div class="value mono"><%= stats.vehicles %></div></div>
+  <div class="kpi k-sky"><div class="label">In queue now</div><div class="value mono"><%= stats.waiting + stats.washing %></div><div class="small"><%= stats.waiting %> waiting · <%= stats.washing %> washing</div></div>
+  <div class="kpi"><div class="label">Unpaid</div><div class="value mono"><%= rupiah(stats.outstanding) %></div></div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Today's transactions</h2><a class="btn btn-sm btn-ghost" href="/app/transactions">View all</a></div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Time</th><th>Plate</th><th>Package</th><th>Status</th><th class="num">Total</th></tr></thead>
+        <tbody>
+          <% if (!recent.length) { %><tr><td colspan="5" class="empty">No vehicles yet today. <a href="/app/transactions/new">Add the first one →</a></td></tr><% } %>
+          <% recent.forEach((t) => { %>
+            <tr>
+              <td class="mono"><%= time(t.created_at) %></td>
+              <td><a class="row-link" href="/app/transactions/<%= t.id %>"><span class="plate"><%= t.plate %></span></a></td>
+              <td><%= t.package_name %><div class="small muted"><%= t.vehicle_type_name %></div></td>
+              <td><span class="badge badge-<%= t.status %>"><%= t.status %></span></td>
+              <td class="num nowrap"><%= rupiah(t.total) %><div><span class="badge badge-<%= t.payment_status %>"><%= t.payment_status %></span></div></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>In the queue</h2><a class="btn btn-sm btn-ghost" href="/app/queue">Open queue</a></div>
+    <% if (!queue.washing.length && !queue.waiting.length) { %><div class="empty">The queue is empty.</div><% } %>
+    <% queue.washing.concat(queue.waiting).slice(0, 5).forEach((t) => { %>
+      <%- include('../partials/ticket', { t, actions: false }) %>
+    <% }) %>
+  </div>
+</div>
+<%- include('../partials/app-end') %>

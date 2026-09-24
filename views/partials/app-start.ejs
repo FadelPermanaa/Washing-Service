@@ -1,0 +1,30 @@
+<%- include('head') %>
+<% const nav = [
+  ['Workspace', [['/app', 'Dashboard', 'dashboard'], ['/app/transactions/new', 'New wash', 'plus'], ['/app/queue', 'Queue', 'queue'], ['/app/transactions', 'Transactions', 'list'], ['/app/vehicles', 'Vehicles', 'car'], ['/app/reports', 'Reports', 'chart']]],
+  ...(user.role === 'admin' ? [['Admin', [['/app/prices', 'Price list', 'tag'], ['/app/users', 'Staff', 'users']]]] : []),
+];
+const fullPath = path.replace(/\/$/, '') || '/';
+const isActive = (href) => href === '/app' ? fullPath === '/app' : (href === '/app/transactions' ? fullPath === href || /^\/app\/transactions\/\d+/.test(fullPath) : fullPath.startsWith(href)); %>
+<div class="mobile-bar">
+  <%- include('brand', { href: '/app' }) %>
+  <button type="button" data-toggle-sidebar aria-label="Open menu"><%- include('icon', { name: 'menu' }) %></button>
+</div>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <%- include('brand', { href: '/app' }) %>
+    <nav>
+      <% nav.forEach(([label, items]) => { %>
+        <div class="nav-label"><%= label %></div>
+        <% items.forEach(([href, text, icon]) => { %>
+          <a class="nav<%= isActive(href) ? ' active' : '' %>" href="<%= href %>"<%- isActive(href) ? ' aria-current="page"' : '' %>><%- include('icon', { name: icon }) %><%= text %></a>
+        <% }) %>
+      <% }) %>
+    </nav>
+    <div class="me">
+      <strong><%= user.name %></strong>
+      <span class="small"><%= user.role === 'admin' ? 'Administrator' : 'Cashier' %> · @<%= user.username %></span>
+      <form method="post" action="/logout"><button class="btn btn-sm btn-block" type="submit">Log out</button></form>
+    </div>
+  </aside>
+  <main class="main">
+    <%- include('flash') %>

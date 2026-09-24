@@ -1,0 +1,178 @@
+<%- include('partials/head') %>
+<header class="site-nav">
+  <div class="container">
+    <%- include('partials/brand') %>
+    <nav class="site-links" aria-label="Main">
+      <a href="#services">Services</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#how">How it works</a>
+      <a href="#status">Check status</a>
+      <a class="btn btn-sm" href="/login">Staff login <span class="arrow">→</span></a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow">Car &amp; motorcycle wash</span>
+      <h1>A spotless ride, <em>without</em> the wait.</h1>
+      <p class="lead">Snow-foam washes, interior detailing and paint care for every vehicle size. Clear prices, a live queue, and your car handed back looking brand new.</p>
+      <div class="hero-cta">
+        <a class="btn btn-lg" href="#pricing">See prices <span class="arrow">→</span></a>
+        <a class="btn btn-lg btn-ghost" href="#status">Check my car</a>
+      </div>
+    </div>
+    <div class="hero-card" aria-label="Example of the live queue">
+      <h3>Today's queue</h3>
+      <p class="small" style="color:#C9BAB8">Every vehicle is tracked from arrival to pickup.</p>
+      <div class="q-row"><span class="plate">B 1234 XYZ</span><span class="small">Full Wash</span><span class="step s3">Done</span></div>
+      <div class="q-row"><span class="plate">D 88 KLM</span><span class="small">Premium + Wax</span><span class="step s2">Washing</span></div>
+      <div class="q-row"><span class="plate">F 4521 AB</span><span class="small">Exterior Wash</span><span class="step s1">Waiting</span></div>
+      <div class="hero-float">✦ Average wash in 25 min</div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <% const words = ['Snow foam wash', 'Interior detailing', 'Body wax', 'Engine bay wash', 'Tire shine', 'Underbody wash', 'Cabin fragrance', 'Motorcycle wash']; %>
+    <% for (let r = 0; r < 2; r++) { %><% words.forEach((w) => { %><span><%= w %></span><% }) %><% } %>
+  </div>
+</div>
+
+<section class="section" id="services">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">What we do</span>
+        <h2>Care for every part of your vehicle.</h2>
+      </div>
+      <p>From a quick exterior rinse to a full interior refresh, choose the level of clean you need, priced by vehicle size.</p>
+    </div>
+    <div class="feature-grid">
+      <article class="feature">
+        <span class="num">01</span>
+        <div class="icon"><%- include('partials/icon', { name: 'drop', size: 24 }) %></div>
+        <h3>Wash</h3>
+        <p>Snow-foam exterior wash for body, wheels and glass, or a full wash that adds vacuuming and interior wipe-down.</p>
+      </article>
+      <article class="feature">
+        <span class="num">02</span>
+        <div class="icon"><%- include('partials/icon', { name: 'sparkle', size: 24 }) %></div>
+        <h3>Detail</h3>
+        <p>Deep interior cleaning with extractor and steam that lifts stains, dust and odours from seats, carpets and trim.</p>
+      </article>
+      <article class="feature">
+        <span class="num">03</span>
+        <div class="icon"><%- include('partials/icon', { name: 'shield', size: 24 }) %></div>
+        <h3>Protect</h3>
+        <p>Body wax and tire shine that keep the paint glossy and help repel rain and dirt between washes.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow" style="color:var(--sky)">Why us</span>
+        <h2>Fast, transparent and consistent, every single visit.</h2>
+      </div>
+      <p class="muted">Every vehicle gets a ticket, a checklist and a status you can follow, so nothing is guessed and nothing is forgotten.</p>
+    </div>
+    <div class="stats-row">
+      <div><strong><%= priceList.types.length %></strong><span class="muted">vehicle classes priced</span></div>
+      <div><strong><%= priceList.packages.length %></strong><span class="muted">wash packages</span></div>
+      <div><strong>~25m</strong><span class="muted">typical full wash</span></div>
+      <div><strong>100%</strong><span class="muted">tracked by plate</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Pricing</span>
+        <h2>Simple prices by vehicle size.</h2>
+      </div>
+      <p>No hidden fees. Pick a package, add extras if you like, and pay by cash, QRIS, transfer or card.</p>
+    </div>
+    <div class="price-table-wrap">
+      <table class="price-table">
+        <thead>
+          <tr>
+            <th scope="col">Package</th>
+            <% priceList.types.forEach((t) => { %><th scope="col"><%= t.name %></th><% }) %>
+          </tr>
+        </thead>
+        <tbody>
+          <% priceList.packages.forEach((p) => { %>
+            <tr>
+              <th scope="row"><%= p.name %><% if (p.description) { %><small><%= p.description %></small><% } %></th>
+              <% priceList.types.forEach((t) => { const price = priceList.prices[p.id + ':' + t.id]; %>
+                <td><%= price != null ? rupiah(price) : '—' %></td>
+              <% }) %>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% if (priceList.addons.length) { %>
+      <div class="addon-chips" aria-label="Add-ons">
+        <% priceList.addons.forEach((a) => { %><span>+ <%= a.name %><b><%= rupiah(a.price) %></b></span><% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<section class="section section-sky" id="how">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">How it works</span>
+        <h2>Four steps from dusty to dazzling.</h2>
+      </div>
+    </div>
+    <ol class="steps">
+      <li><h3>Drive in</h3><p class="muted">We register your plate. Returning customers are recognised instantly.</p></li>
+      <li><h3>Choose</h3><p class="muted">Pick a package and extras. The price is calculated on the spot.</p></li>
+      <li><h3>We wash</h3><p class="muted">Your car moves from <b>Waiting</b> to <b>Washing</b> to <b>Done</b>, and you can follow along live.</p></li>
+      <li><h3>Drive out</h3><p class="muted">Pay the way you like and take your receipt. That's it.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="status">
+  <div class="container">
+    <div class="status-box">
+      <div>
+        <span class="eyebrow">Live status</span>
+        <h2 style="margin-top:16px">Is my car ready yet?</h2>
+        <p class="muted" style="margin:0">Enter your plate number to see today's wash status.</p>
+      </div>
+      <form class="inline-form" method="get" action="/status">
+        <label class="sr-only" for="plate">Plate number</label>
+        <input class="plate-input" id="plate" type="text" name="plate" placeholder="B 1234 XYZ" required maxlength="15" autocomplete="off">
+        <button class="btn btn-lg" type="submit">Check <span class="arrow">→</span></button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div>
+      <%- include('partials/brand') %>
+      <p style="margin-top:12px;max-width:360px">Car &amp; motorcycle wash, detailing and protection.</p>
+    </div>
+    <div class="small">
+      <p>© <%= new Date().getFullYear() %> <%= businessName %></p>
+      <p><a href="/login">Staff login</a></p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div><h1><%= t.code %></h1><div class="sub"><span class="badge badge-<%= t.status %>"><%= t.status %></span> <span class="badge badge-<%= t.payment_status %>"><%= t.payment_status %></span></div></div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="/app/transactions">← Back</a>
+    <button class="btn" type="button" onclick="window.print()"><%- include('../partials/icon', { name: 'print' }) %> Print receipt</button>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="no-print">
+    <div class="card">
+      <% const idx = { waiting: 1, washing: 2, done: 3, cancelled: 0 }[t.status]; %>
+      <div class="timeline">
+        <div class="<%= idx >= 1 ? 'on' : '' %>">Received<br><%= time(t.created_at) %></div>
+        <div class="<%= idx >= 2 ? 'on' : '' %>">Washing<br><%= time(t.started_at) %></div>
+        <div class="<%= idx >= 3 ? 'on' : '' %>">Done<br><%= time(t.finished_at) %></div>
+      </div>
+      <dl class="detail-list">
+        <dt>Plate</dt><dd><span class="plate plate-lg"><%= t.plate %></span></dd>
+        <dt>Vehicle</dt><dd><%= t.vehicle_type_name %><%= t.brand_model ? ' · ' + t.brand_model : '' %><%= t.color ? ' · ' + t.color : '' %></dd>
+        <dt>Customer</dt><dd><%= t.customer_name || 'Walk-in' %><%= t.customer_phone ? ' · ' + t.customer_phone : '' %></dd>
+        <dt>Created</dt><dd><%= t.created_at %> by <%= t.cashier_name || '—' %></dd>
+        <dt>Payment</dt><dd><%= t.payment_status === 'paid' ? `${t.payment_method} · ${t.paid_at}` : 'Not paid yet' %></dd>
+        <% if (t.notes) { %><dt>Notes</dt><dd><%= t.notes %></dd><% } %>
+      </dl>
+    </div>
+    <% if (t.status !== 'cancelled') { %>
+    <div class="card">
+      <h2>Actions</h2>
+      <div class="ticket-actions">
+        <% if (t.status === 'waiting') { %>
+          <form method="post" action="/app/transactions/<%= t.id %>/status"><input type="hidden" name="action" value="start"><input type="hidden" name="back" value="detail"><button class="btn" type="submit">Start wash</button></form>
+        <% } else if (t.status === 'washing') { %>
+          <form method="post" action="/app/transactions/<%= t.id %>/status"><input type="hidden" name="action" value="finish"><input type="hidden" name="back" value="detail"><button class="btn btn-sky" type="submit">Mark done</button></form>
+        <% } %>
+        <% if (t.payment_status === 'unpaid') { %>
+          <form method="post" action="/app/transactions/<%= t.id %>/pay">
+            <input type="hidden" name="back" value="detail">
+            <select name="method" aria-label="Payment method"><% methods.forEach((m) => { %><option><%= m %></option><% }) %></select>
+            <button class="btn btn-vanilla" type="submit">Record payment</button>
+          </form>
+        <% } %>
+        <% if (t.payment_status === 'unpaid' && ['waiting', 'washing'].includes(t.status)) { %>
+          <form method="post" action="/app/transactions/<%= t.id %>/status" data-confirm="Cancel this transaction?"><input type="hidden" name="action" value="cancel"><input type="hidden" name="back" value="detail"><button class="btn btn-danger" type="submit">Cancel</button></form>
+        <% } %>
+        <% if (t.status === 'done' && t.payment_status === 'paid') { %><p class="muted" style="margin:0">Completed and paid — nothing left to do.</p><% } %>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="receipt"<%- autoPrint ? ' data-autoprint' : '' %>>
+    <div class="r-head">
+      <strong style="font-size:18px"><%= businessName %></strong>
+      <div class="small muted">Car &amp; motorcycle wash</div>
+      <div class="small" style="margin-top:8px"><%= t.code %> · <%= t.created_at.slice(0, 16) %></div>
+    </div>
+    <div class="r-line"><span>Plate</span><strong><%= t.plate %></strong></div>
+    <div class="r-line"><span>Vehicle</span><span><%= t.vehicle_type_name %></span></div>
+    <div class="r-line" style="margin-top:8px"><span><%= t.package_name %></span><span><%= rupiah(t.package_price) %></span></div>
+    <% t.addons.forEach((a) => { %><div class="r-line"><span>+ <%= a.name %></span><span><%= rupiah(a.price) %></span></div><% }) %>
+    <% if (t.discount) { %><div class="r-line"><span>Discount</span><span>− <%= rupiah(t.discount) %></span></div><% } %>
+    <div class="r-line r-total"><span>Total</span><span><%= rupiah(t.total) %></span></div>
+    <div class="r-line"><span>Status</span><span><%= t.payment_status === 'paid' ? `PAID · ${t.payment_method}` : 'UNPAID' %></span></div>
+    <div class="r-foot">Thank you! Track your wash at<br><strong>/status</strong> with your plate number.</div>
+  </div>
+</div>
+<%- include('../partials/app-end') %>

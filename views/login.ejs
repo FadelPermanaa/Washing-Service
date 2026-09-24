@@ -1,0 +1,32 @@
+<%- include('partials/head') %>
+<div class="auth-wrap">
+  <div class="auth-art">
+    <span class="bubble b1"></span><span class="bubble b2"></span>
+    <%- include('partials/brand') %>
+    <div>
+      <span class="eyebrow" style="color:var(--sky)">Staff workspace</span>
+      <h2 style="margin-top:18px">Every car, every wash, every rupiah — in one place.</h2>
+    </div>
+    <p class="small" style="color:#C9BAB8;margin:0">Queue · Payments · Reports</p>
+  </div>
+  <div class="auth-form">
+    <form method="post" action="/login">
+      <h1>Welcome back</h1>
+      <p class="muted">Sign in to open the cashier workspace.</p>
+      <% if (error) { %><div class="flash flash-error" role="alert"><%= error %></div><% } %>
+      <input type="hidden" name="next" value="<%= next %>">
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" type="text" name="username" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn-lg btn-block" type="submit">Sign in <span class="arrow">→</span></button>
+      <p class="small muted" style="margin-top:18px;text-align:center"><a href="/">← Back to website</a></p>
+    </form>
+  </div>
+</div>
+</body>
+</html>

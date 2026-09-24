@@ -1,0 +1,47 @@
+<%- include('../partials/app-start') %>
+<% const r = report; const [y, m] = r.month.split('-').map(Number); const daysInMonth = new Date(y, m, 0).getDate();
+   const dayMap = Object.fromEntries(r.byDay.map((d) => [Number(d.day.slice(8)), d]));
+   const maxRev = Math.max(1, ...r.byDay.map((d) => d.revenue));
+   const maxPkg = Math.max(1, ...r.byPackage.map((p) => p.revenue));
+   const maxType = Math.max(1, ...r.byType.map((p) => p.count)); %>
+<div class="topbar">
+  <div><h1>Reports</h1><div class="sub"><%= new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) %></div></div>
+  <form class="actions" method="get"><input type="month" name="month" value="<%= r.month %>" aria-label="Month"><button class="btn" type="submit">Show</button></form>
+</div>
+<div class="kpis">
+  <div class="kpi k-dark"><div class="label">Revenue (paid)</div><div class="value mono"><%= rupiah(r.totals.revenue) %></div></div>
+  <div class="kpi k-vanilla"><div class="label">Vehicles washed</div><div class="value mono"><%= r.totals.vehicles %></div></div>
+  <div class="kpi k-sky"><div class="label">Average per vehicle</div><div class="value mono"><%= rupiah(r.totals.vehicles ? Math.round(r.totals.revenue / r.totals.vehicles) : 0) %></div></div>
+  <div class="kpi"><div class="label">Active days</div><div class="value mono"><%= r.byDay.length %></div></div>
+</div>
+<div class="card">
+  <h2>Daily revenue</h2>
+  <div class="bars" role="img" aria-label="Daily revenue bar chart">
+    <% for (let d = 1; d <= daysInMonth; d++) { const row = dayMap[d]; const h = row ? Math.max(2, Math.round(row.revenue / maxRev * 100)) : 0; %>
+      <div class="bar" style="height:<%= h %>%"><span><%= d %>: <%= row ? rupiah(row.revenue) + ' · ' + row.vehicles + ' veh' : 'no sales' %></span></div>
+    <% } %>
+  </div>
+  <div class="bars-axis"><span>1</span><span><%= Math.ceil(daysInMonth / 2) %></span><span><%= daysInMonth %></span></div>
+</div>
+<div class="grid-2-even" style="margin-top:18px">
+  <div class="card">
+    <h2>By package</h2>
+    <% if (!r.byPackage.length) { %><div class="empty">No data.</div><% } %>
+    <% r.byPackage.forEach((p) => { %>
+      <div style="margin-bottom:14px"><div class="card-head" style="margin:0"><span><%= p.name %> <span class="muted small">× <%= p.count %></span></span><strong class="mono"><%= rupiah(p.revenue) %></strong></div><div class="meter"><i style="width:<%= Math.round(p.revenue / maxPkg * 100) %>%"></i></div></div>
+    <% }) %>
+  </div>
+  <div class="card">
+    <h2>By vehicle type</h2>
+    <% if (!r.byType.length) { %><div class="empty">No data.</div><% } %>
+    <% r.byType.forEach((p) => { %>
+      <div style="margin-bottom:14px"><div class="card-head" style="margin:0"><span><%= p.name %></span><strong class="mono"><%= p.count %></strong></div><div class="meter"><i style="width:<%= Math.round(p.count / maxType * 100) %>%;background:var(--sky)"></i></div></div>
+    <% }) %>
+    <h2 style="margin-top:22px">By payment method</h2>
+    <table class="data"><tbody>
+      <% if (!r.byMethod.length) { %><tr><td class="empty">No payments.</td></tr><% } %>
+      <% r.byMethod.forEach((p) => { %><tr><td><%= p.name %></td><td class="num"><%= p.count %>×</td><td class="num"><%= rupiah(p.revenue) %></td></tr><% }) %>
+    </tbody></table>
+  </div>
+</div>
+<%- include('../partials/app-end') %>

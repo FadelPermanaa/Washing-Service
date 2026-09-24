@@ -1,0 +1,79 @@
+<%- include('../partials/app-start') %>
+<% const { types, packages, addons, prices } = priceList; %>
+<div class="topbar">
+  <div><h1>Price list</h1><div class="sub">Set the price of every package for every vehicle type. Leave a cell empty if a package isn't offered for that type.</div></div>
+</div>
+<form class="card" method="post" action="/app/prices">
+  <div class="card-head"><h2>Package prices (Rp)</h2><button class="btn" type="submit">Save prices</button></div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Package</th><% types.forEach((t) => { %><th class="num<%= t.active ? '' : ' inactive' %>"><%= t.name %></th><% }) %></tr></thead>
+      <tbody>
+        <% packages.forEach((p) => { %>
+          <tr class="<%= p.active ? '' : 'inactive' %>">
+            <td><strong><%= p.name %></strong><div class="small muted"><%= p.description || '' %></div></td>
+            <% types.forEach((t) => { const v = prices[p.id + ':' + t.id]; %>
+              <td class="num"><input class="price-input" type="number" min="0" step="500" name="price_<%= p.id %>_<%= t.id %>" value="<%= v ?? '' %>" aria-label="<%= p.name %> — <%= t.name %>" inputmode="numeric"></td>
+            <% }) %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</form>
+
+<div class="grid-2-even" style="margin-top:18px">
+  <div class="card">
+    <h2>Vehicle types</h2>
+    <table class="data"><tbody>
+      <% types.forEach((t) => { %>
+        <tr class="<%= t.active ? '' : 'inactive' %>"><td><%= t.name %></td><td class="num">
+          <form method="post" action="/app/catalog/vehicle-types/<%= t.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= t.active ? 'Hide' : 'Show' %></button></form>
+        </td></tr>
+      <% }) %>
+    </tbody></table>
+    <form class="filters" method="post" action="/app/catalog/vehicle-types" style="margin:14px 0 0">
+      <input type="text" name="name" placeholder="New vehicle type" required maxlength="40" aria-label="New vehicle type" style="flex:1">
+      <button class="btn" type="submit">Add</button>
+    </form>
+
+    <h2 style="margin-top:28px">Packages</h2>
+    <table class="data"><tbody>
+      <% packages.forEach((p) => { %>
+        <tr class="<%= p.active ? '' : 'inactive' %>"><td><%= p.name %></td><td class="num">
+          <form method="post" action="/app/catalog/packages/<%= p.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= p.active ? 'Hide' : 'Show' %></button></form>
+        </td></tr>
+      <% }) %>
+    </tbody></table>
+    <form method="post" action="/app/catalog/packages" style="margin-top:14px">
+      <div class="field-row">
+        <input type="text" name="name" placeholder="New package name" required maxlength="50" aria-label="Package name">
+        <input type="text" name="description" placeholder="Short description" maxlength="120" aria-label="Package description">
+      </div>
+      <button class="btn" type="submit" style="margin-top:10px">Add package</button>
+      <p class="small muted" style="margin:8px 0 0">After adding, set its prices in the table above.</p>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Add-ons</h2>
+    <table class="data"><tbody>
+      <% addons.forEach((a) => { %>
+        <tr class="<%= a.active ? '' : 'inactive' %>">
+          <td><%= a.name %></td>
+          <td class="num"><form class="filters" style="margin:0;justify-content:flex-end" method="post" action="/app/catalog/addons/<%= a.id %>/price">
+            <input class="price-input" type="number" min="0" step="500" name="price" value="<%= a.price %>" aria-label="Price for <%= a.name %>">
+            <button class="btn btn-sm" type="submit">Save</button>
+          </form></td>
+          <td class="num"><form method="post" action="/app/catalog/addons/<%= a.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= a.active ? 'Hide' : 'Show' %></button></form></td>
+        </tr>
+      <% }) %>
+    </tbody></table>
+    <form class="filters" method="post" action="/app/catalog/addons" style="margin:14px 0 0">
+      <input type="text" name="name" placeholder="New add-on" required maxlength="40" aria-label="New add-on" style="flex:1">
+      <input class="price-input" type="number" name="price" min="0" step="500" placeholder="Price" required aria-label="Add-on price">
+      <button class="btn" type="submit">Add</button>
+    </form>
+  </div>
+</div>
+<%- include('../partials/app-end') %>
