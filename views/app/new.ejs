@@ -72,5 +72,10 @@
   </aside>
 </form>
 
+<div class="mobile-total" aria-hidden="true">
+  <div><span class="small">Total</span><strong id="mobile-total">—</strong></div>
+  <button class="btn btn-vanilla" type="submit" form="tx-form" tabindex="-1">Add to queue <span class="arrow">→</span></button>
+</div>
+
 <script id="price-data" type="application/json"><%- JSON.stringify({ prices: priceList.prices, addons: Object.fromEntries(priceList.addons.map((a) => [a.id, a.price])) }).replace(/</g, '\\u003c') %></script>
 <%- include('../partials/app-end') %>

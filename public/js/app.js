@@ -66,6 +66,7 @@
     $('sum-addons').textContent = rupiah(addons);
     $('sum-discount').textContent = `− ${rupiah(discount)}`;
     $('sum-total').textContent = pkgPrice != null ? rupiah(subtotal - discount) : '—';
+    if ($('mobile-total')) $('mobile-total').textContent = $('sum-total').textContent;
     $('unavailable').hidden = pkgPrice != null;
     $('submit-btn').disabled = pkgPrice == null;
   }
@@ -109,6 +110,13 @@
   }
   plate.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(lookup, 400); });
   plate.addEventListener('blur', () => { plate.value = normalizePlate(plate.value); lookup(); });
+
+  // Hide the sticky total bar once the full summary is on screen
+  const bar = document.querySelector('.mobile-total');
+  const summary = document.querySelector('.summary');
+  if (bar && summary && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => bar.classList.toggle('hide', e.isIntersecting), { threshold: 0.35 }).observe(summary);
+  }
 
   recalc();
   if (plate.value) lookup();

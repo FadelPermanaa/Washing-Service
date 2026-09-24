@@ -331,7 +331,7 @@ table.data a.row-link:hover { text-decoration: underline; }
 .choice input:checked + span { border-color: var(--mocha); background: var(--vanilla); box-shadow: 0 0 0 1px var(--mocha); }
 .choice input:focus-visible + span { outline: 3px solid var(--sky); outline-offset: 2px; }
 .choice input:disabled + span { opacity: .4; cursor: not-allowed; }
-.choice.check > span { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.choice.check > span { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .choice.check > span b { white-space: nowrap; }
 .choice.check input:checked + span { background: var(--sky); }
 .step-title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; margin: 0 0 12px; }
@@ -446,3 +446,56 @@ table.data a.row-link:hover { text-decoration: underline; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .topbar .actions input, .topbar .actions select { width: auto; }
+
+/* Grid children must be allowed to shrink so wide tables scroll inside their card instead of stretching the page */
+.grid-2 > *, .grid-2-even > *, .board > *, .main { min-width: 0; }
+
+/* Touch devices (tablet & phone): bigger tap targets */
+@media (pointer: coarse), (max-width: 900px) {
+  .btn-sm { padding: 10px 16px; min-height: 40px; }
+  .ticket-actions select { min-height: 40px; }
+  .sidebar a.nav { padding: 12px 12px; }
+}
+
+/* Sticky total bar on the New wash form (tablet & phone, where the summary sits below the form) */
+.mobile-total { display: none; }
+@media (max-width: 1080px) {
+  .mobile-total {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    position: sticky; bottom: 12px; z-index: 30; margin-top: 18px;
+    background: var(--mocha); color: var(--vanilla-soft); border-radius: 999px; padding: 8px 8px 8px 22px;
+    box-shadow: 0 12px 30px -10px rgba(67, 47, 46, .55);
+  }
+  .mobile-total .small { display: block; line-height: 1; color: #C9BAB8; }
+  .mobile-total.hide { opacity: 0; pointer-events: none; transform: translateY(12px); }
+  .mobile-total { transition: opacity .2s ease, transform .2s ease; }
+  .mobile-total strong { font-size: 20px; color: var(--vanilla); font-variant-numeric: tabular-nums; }
+}
+
+/* Phone: tables become stacked cards, add-on prices go under their name */
+@media (max-width: 600px) {
+  table.data.stack thead { display: none; }
+  table.data.stack, table.data.stack tbody, table.data.stack tr, table.data.stack td { display: block; width: 100%; }
+  table.data.stack tr { border: 1px solid var(--mocha-10); border-radius: 14px; padding: 6px 14px; margin-bottom: 10px; background: var(--white); }
+  table.data.stack tbody tr:hover { background: var(--white); }
+  table.data.stack td { display: flex; justify-content: flex-end; flex-wrap: wrap; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px dashed var(--mocha-10); text-align: right; }
+  table.data.stack td:last-child { border-bottom: 0; }
+  table.data.stack td > div { text-align: right; }
+  table.data.stack td::before { content: attr(data-label); font-size: 12px; font-weight: 600; color: var(--mocha-60); text-transform: uppercase; letter-spacing: .06em; text-align: left; flex: none; margin-right: auto; }
+  table.data.stack td[data-label=""]::before { display: none; }
+  table.data.stack td[data-label=""] { justify-content: flex-end; }
+  table.data.stack td.empty { display: block; text-align: center; border: 0; }
+  table.data.stack td.empty::before { display: none; }
+  table.data.stack .num { text-align: right; }
+  .card:has(> .table-wrap > table.stack), .card:has(> .filters + .table-wrap > table.stack) { background: transparent; border: 0; padding: 0; box-shadow: none; }
+  .choice-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Public price table: keep the package column visible while scrolling sideways on small screens */
+.price-table tbody th, .price-table thead th:first-child { position: sticky; left: 0; z-index: 1; min-width: 170px; }
+.price-table tbody th { background: var(--white); box-shadow: 1px 0 0 var(--mocha-10); }
+.scroll-hint { display: none; font-size: 13px; color: var(--mocha-60); margin: 0 0 10px; }
+@media (max-width: 700px) {
+  .scroll-hint { display: block; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+}

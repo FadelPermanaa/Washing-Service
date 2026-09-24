@@ -18,17 +18,17 @@
   <div class="card">
     <div class="card-head"><h2>Today's transactions</h2><a class="btn btn-sm btn-ghost" href="/app/transactions">View all</a></div>
     <div class="table-wrap">
-      <table class="data">
+      <table class="data stack">
         <thead><tr><th>Time</th><th>Plate</th><th>Package</th><th>Status</th><th class="num">Total</th></tr></thead>
         <tbody>
           <% if (!recent.length) { %><tr><td colspan="5" class="empty">No vehicles yet today. <a href="/app/transactions/new">Add the first one →</a></td></tr><% } %>
           <% recent.forEach((t) => { %>
             <tr>
-              <td class="mono"><%= time(t.created_at) %></td>
-              <td><a class="row-link" href="/app/transactions/<%= t.id %>"><span class="plate"><%= t.plate %></span></a></td>
-              <td><%= t.package_name %><div class="small muted"><%= t.vehicle_type_name %></div></td>
-              <td><span class="badge badge-<%= t.status %>"><%= t.status %></span></td>
-              <td class="num nowrap"><%= rupiah(t.total) %><div><span class="badge badge-<%= t.payment_status %>"><%= t.payment_status %></span></div></td>
+              <td data-label="Time" class="mono"><%= time(t.created_at) %></td>
+              <td data-label="Plate"><a class="row-link" href="/app/transactions/<%= t.id %>"><span class="plate"><%= t.plate %></span></a></td>
+              <td data-label="Package"><%= t.package_name %><div class="small muted"><%= t.vehicle_type_name %></div></td>
+              <td data-label="Status"><span class="badge badge-<%= t.status %>"><%= t.status %></span></td>
+              <td data-label="Total" class="num nowrap"><%= rupiah(t.total) %><div><span class="badge badge-<%= t.payment_status %>"><%= t.payment_status %></span></div></td>
             </tr>
           <% }) %>
         </tbody>

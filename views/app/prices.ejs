@@ -25,26 +25,26 @@
 <div class="grid-2-even" style="margin-top:18px">
   <div class="card">
     <h2>Vehicle types</h2>
-    <table class="data"><tbody>
+    <div class="table-wrap"><table class="data"><tbody>
       <% types.forEach((t) => { %>
         <tr class="<%= t.active ? '' : 'inactive' %>"><td><%= t.name %></td><td class="num">
           <form method="post" action="/app/catalog/vehicle-types/<%= t.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= t.active ? 'Hide' : 'Show' %></button></form>
         </td></tr>
       <% }) %>
-    </tbody></table>
+    </tbody></table></div>
     <form class="filters" method="post" action="/app/catalog/vehicle-types" style="margin:14px 0 0">
       <input type="text" name="name" placeholder="New vehicle type" required maxlength="40" aria-label="New vehicle type" style="flex:1">
       <button class="btn" type="submit">Add</button>
     </form>
 
     <h2 style="margin-top:28px">Packages</h2>
-    <table class="data"><tbody>
+    <div class="table-wrap"><table class="data"><tbody>
       <% packages.forEach((p) => { %>
         <tr class="<%= p.active ? '' : 'inactive' %>"><td><%= p.name %></td><td class="num">
           <form method="post" action="/app/catalog/packages/<%= p.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= p.active ? 'Hide' : 'Show' %></button></form>
         </td></tr>
       <% }) %>
-    </tbody></table>
+    </tbody></table></div>
     <form method="post" action="/app/catalog/packages" style="margin-top:14px">
       <div class="field-row">
         <input type="text" name="name" placeholder="New package name" required maxlength="50" aria-label="Package name">
@@ -57,7 +57,7 @@
 
   <div class="card">
     <h2>Add-ons</h2>
-    <table class="data"><tbody>
+    <div class="table-wrap"><table class="data"><tbody>
       <% addons.forEach((a) => { %>
         <tr class="<%= a.active ? '' : 'inactive' %>">
           <td><%= a.name %></td>
@@ -68,7 +68,7 @@
           <td class="num"><form method="post" action="/app/catalog/addons/<%= a.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= a.active ? 'Hide' : 'Show' %></button></form></td>
         </tr>
       <% }) %>
-    </tbody></table>
+    </tbody></table></div>
     <form class="filters" method="post" action="/app/catalog/addons" style="margin:14px 0 0">
       <input type="text" name="name" placeholder="New add-on" required maxlength="40" aria-label="New add-on" style="flex:1">
       <input class="price-input" type="number" name="price" min="0" step="500" placeholder="Price" required aria-label="Add-on price">
