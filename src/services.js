@@ -1,6 +1,15 @@
 const { db, now, today, tx } = require('./db');
 
-class UserError extends Error {}
+/** An error meant for the user. `key` is an i18n key (see src/i18n), `params` fill its placeholders. */
+class UserError extends Error {
+  constructor(key, params = {}) {
+    super(key);
+    this.key = key;
+    this.params = params;
+  }
+}
+
+const both = (obj, field = 'name') => ({ en: obj[field], id: obj[`${field}_id`] || obj[field] });
 
 /** "b1234xyz" / "B-1234 xyz" -> "B 1234 XYZ" */
 function normalizePlate(raw) {
@@ -29,11 +38,11 @@ function getPriceList({ includeInactive = false } = {}) {
 
 function quote({ vehicleTypeId, packageId, addonIds = [], discount = 0 }) {
   const type = db.prepare('SELECT * FROM vehicle_types WHERE id = ? AND active = 1').get(vehicleTypeId);
-  if (!type) throw new UserError('Please choose a vehicle type.');
+  if (!type) throw new UserError('err.chooseType');
   const pkg = db.prepare('SELECT * FROM packages WHERE id = ? AND active = 1').get(packageId);
-  if (!pkg) throw new UserError('Please choose a package.');
+  if (!pkg) throw new UserError('err.choosePackage');
   const priceRow = db.prepare('SELECT price FROM package_prices WHERE package_id = ? AND vehicle_type_id = ?').get(pkg.id, type.id);
-  if (!priceRow) throw new UserError(`"${pkg.name}" is not available for ${type.name}.`);
+  if (!priceRow) throw new UserError('err.packageUnavailable', { pkg: both(pkg), type: both(type) });
 
   const ids = [...new Set(addonIds.map((id) => toInt(id)).filter(Boolean))];
   const addons = ids.map((id) => db.prepare('SELECT * FROM addons WHERE id = ? AND active = 1').get(id)).filter(Boolean);
@@ -49,7 +58,7 @@ function findVehicleByPlate(plate) {
   const p = normalizePlate(plate);
   if (!p) return null;
   const v = db.prepare(`
-    SELECT v.*, c.name AS customer_name, c.phone AS customer_phone, t.name AS type_name,
+    SELECT v.*, c.name AS customer_name, c.phone AS customer_phone, t.name AS type_name, t.name_id AS type_name_id,
       (SELECT COUNT(*) FROM transactions x WHERE x.vehicle_id = v.id AND x.status != 'cancelled') AS visits,
       (SELECT MAX(created_at) FROM transactions x WHERE x.vehicle_id = v.id) AS last_visit
     FROM vehicles v
@@ -62,7 +71,7 @@ function findVehicleByPlate(plate) {
 function listVehicles(q = '') {
   const like = `%${String(q).trim()}%`;
   return db.prepare(`
-    SELECT v.*, c.name AS customer_name, c.phone AS customer_phone, t.name AS type_name,
+    SELECT v.*, c.name AS customer_name, c.phone AS customer_phone, t.name AS type_name, t.name_id AS type_name_id,
       COUNT(x.id) AS visits, COALESCE(SUM(CASE WHEN x.payment_status = 'paid' THEN x.total END), 0) AS spent,
       MAX(x.created_at) AS last_visit
     FROM vehicles v
@@ -87,7 +96,7 @@ function nextCode() {
 
 function createTransaction(input, userId) {
   const plate = normalizePlate(input.plate);
-  if (!plate || plate.length < 3) throw new UserError('Please enter a valid plate number.');
+  if (!plate || plate.length < 3) throw new UserError('err.plate');
 
   return tx(() => {
     const q = quote({
@@ -126,16 +135,17 @@ function createTransaction(input, userId) {
     const method = paid ? String(input.payment_method || 'Cash') : null;
     const ts = now();
     const txId = Number(db.prepare(`
-      INSERT INTO transactions (code, vehicle_id, customer_id, vehicle_type_id, vehicle_type_name, package_id, package_name,
-        package_price, addons_total, discount, total, payment_status, payment_method, notes, created_by, created_at, paid_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      nextCode(), vehicle.id, customerId, q.type.id, q.type.name, q.pkg.id, q.pkg.name,
+      INSERT INTO transactions (code, vehicle_id, customer_id, vehicle_type_id, vehicle_type_name, vehicle_type_name_id, package_id,
+        package_name, package_name_id, package_price, addons_total, discount, total, payment_status, payment_method, notes,
+        created_by, created_at, paid_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      nextCode(), vehicle.id, customerId, q.type.id, q.type.name, q.type.name_id ?? null, q.pkg.id, q.pkg.name, q.pkg.name_id ?? null,
       q.packagePrice, q.addonsTotal, q.discount, q.total, paid ? 'paid' : 'unpaid', method,
       String(input.notes || '').trim() || null, userId, ts, paid ? ts : null,
     ).lastInsertRowid);
 
     for (const a of q.addons) {
-      db.prepare('INSERT INTO transaction_addons (transaction_id, addon_id, name, price) VALUES (?, ?, ?, ?)').run(txId, a.id, a.name, a.price);
+      db.prepare('INSERT INTO transaction_addons (transaction_id, addon_id, name, name_id, price) VALUES (?, ?, ?, ?, ?)').run(txId, a.id, a.name, a.name_id ?? null, a.price);
     }
     return txId;
   });
@@ -188,11 +198,11 @@ const TRANSITIONS = {
 
 function changeStatus(id, action) {
   const rule = TRANSITIONS[action];
-  if (!rule) throw new UserError('Unknown action.');
+  if (!rule) throw new UserError('err.unknownAction');
   const t = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
-  if (!t) throw new UserError('Transaction not found.');
-  if (!rule.from.includes(t.status)) throw new UserError(`Cannot ${action} a transaction that is ${t.status}.`);
-  if (action === 'cancel' && t.payment_status === 'paid') throw new UserError('Paid transactions cannot be cancelled.');
+  if (!t) throw new UserError('err.txNotFound');
+  if (!rule.from.includes(t.status)) throw new UserError('err.badTransition', { status: { key: `status.${t.status}` } });
+  if (action === 'cancel' && t.payment_status === 'paid') throw new UserError('err.paidCancel');
   const stamp = rule.stamp ? `, ${rule.stamp} = ?` : '';
   const params = rule.stamp ? [rule.to, now(), id] : [rule.to, id];
   db.prepare(`UPDATE transactions SET status = ?${stamp} WHERE id = ?`).run(...params);
@@ -201,11 +211,11 @@ function changeStatus(id, action) {
 const PAYMENT_METHODS = ['Cash', 'QRIS', 'Bank Transfer', 'Debit Card', 'E-Wallet'];
 
 function markPaid(id, method) {
-  if (!PAYMENT_METHODS.includes(method)) throw new UserError('Choose a payment method.');
+  if (!PAYMENT_METHODS.includes(method)) throw new UserError('err.chooseMethod');
   const t = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
-  if (!t) throw new UserError('Transaction not found.');
-  if (t.status === 'cancelled') throw new UserError('This transaction was cancelled.');
-  if (t.payment_status === 'paid') throw new UserError('Already paid.');
+  if (!t) throw new UserError('err.txNotFound');
+  if (t.status === 'cancelled') throw new UserError('err.cancelled');
+  if (t.payment_status === 'paid') throw new UserError('err.alreadyPaid');
   db.prepare("UPDATE transactions SET payment_status = 'paid', payment_method = ?, paid_at = ? WHERE id = ?").run(method, now(), id);
 }
 
@@ -214,7 +224,7 @@ function publicStatus(plate) {
   const p = normalizePlate(plate);
   if (!p) return null;
   return db.prepare(`
-    SELECT x.code, x.status, x.package_name, x.created_at, x.started_at, x.finished_at
+    SELECT x.code, x.status, x.package_name, x.package_name_id, x.created_at, x.started_at, x.finished_at
     FROM transactions x JOIN vehicles v ON v.id = x.vehicle_id
     WHERE v.plate = ? AND x.status != 'cancelled' AND substr(x.created_at, 1, 10) = ?
     ORDER BY x.id DESC`).all(p, today());
@@ -244,11 +254,11 @@ function monthlyReport(month) {
     FROM transactions WHERE substr(created_at, 1, 7) = ? AND status != 'cancelled'
     GROUP BY day ORDER BY day`).all(m);
   const byPackage = db.prepare(`
-    SELECT package_name AS name, COUNT(*) AS count, COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN total END), 0) AS revenue
+    SELECT package_name AS name, MAX(package_name_id) AS name_id, COUNT(*) AS count, COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN total END), 0) AS revenue
     FROM transactions WHERE substr(created_at, 1, 7) = ? AND status != 'cancelled'
     GROUP BY package_name ORDER BY revenue DESC`).all(m);
   const byType = db.prepare(`
-    SELECT vehicle_type_name AS name, COUNT(*) AS count
+    SELECT vehicle_type_name AS name, MAX(vehicle_type_name_id) AS name_id, COUNT(*) AS count
     FROM transactions WHERE substr(created_at, 1, 7) = ? AND status != 'cancelled'
     GROUP BY vehicle_type_name ORDER BY count DESC`).all(m);
   const byMethod = db.prepare(`

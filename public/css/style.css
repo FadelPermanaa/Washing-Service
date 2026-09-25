@@ -499,3 +499,18 @@ table.data a.row-link:hover { text-decoration: underline; }
   .scroll-hint { display: block; }
   .stats-row { grid-template-columns: 1fr 1fr; }
 }
+
+/* Language switch (ID / EN) */
+.lang-switch { display: inline-flex; border: 1.5px solid var(--mocha-20); border-radius: 999px; padding: 3px; gap: 2px; background: var(--white); }
+.lang-switch a { text-decoration: none; font-size: 12px; font-weight: 700; letter-spacing: .06em; padding: 5px 10px; border-radius: 999px; color: var(--mocha-60); line-height: 1; }
+.lang-switch a[aria-current] { background: var(--mocha); color: var(--vanilla); }
+.lang-switch.dark { background: transparent; border-color: rgba(255, 255, 255, .2); }
+.lang-switch.dark a { color: #C9BAB8; }
+.lang-switch.dark a[aria-current] { background: var(--vanilla); color: var(--mocha); }
+.site-links .lang-switch a { display: inline-block !important; }
+.sidebar .lang-switch { margin: 0 0 12px; }
+.auth-form .lang-switch { position: absolute; top: 20px; right: 20px; }
+.auth-form { position: relative; }
+@media (max-width: 900px) {
+  .mobile-bar .right { display: flex; align-items: center; gap: 10px; }
+}

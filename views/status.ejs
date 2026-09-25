@@ -2,33 +2,33 @@
 <header class="site-nav">
   <div class="container">
     <%- include('partials/brand') %>
-    <nav class="site-links"><a class="btn btn-sm btn-ghost" href="/">← Home</a></nav>
+    <nav class="site-links"><%- include('partials/lang-switch') %><a class="btn btn-sm btn-ghost" href="/"><%= t('status.home') %></a></nav>
   </div>
 </header>
 <section class="section">
   <div class="container" style="max-width:720px">
-    <span class="eyebrow">Live status</span>
-    <h1 style="font-size:clamp(32px,5vw,52px);margin-top:16px">Check your wash</h1>
+    <span class="eyebrow"><%= t('statusBox.eyebrow') %></span>
+    <h1 style="font-size:clamp(32px,5vw,52px);margin-top:16px"><%= t('status.heading') %></h1>
     <form class="inline-form" method="get" action="/status" style="margin:24px 0 36px">
-      <input class="plate-input" type="text" name="plate" value="<%= plate %>" placeholder="B 1234 XYZ" aria-label="Plate number" required maxlength="15" autocomplete="off">
-      <button class="btn btn-lg" type="submit">Check</button>
+      <input class="plate-input" type="text" name="plate" value="<%= plate %>" placeholder="B 1234 XYZ" aria-label="<%= t('new.plate') %>" required maxlength="15" autocomplete="off">
+      <button class="btn btn-lg" type="submit"><%= t('statusBox.check') %></button>
     </form>
 
     <% if (results) { %>
       <% if (!results.length) { %>
-        <div class="card empty">No wash found today for <span class="plate"><%= plate %></span>.<br>Please check the plate number or ask our cashier.</div>
+        <div class="card empty"><%= t('status.none1') %> <span class="plate"><%= plate %></span>.<br><%= t('status.none2') %></div>
       <% } %>
       <% results.forEach((r) => { const idx = { waiting: 1, washing: 2, done: 3 }[r.status]; %>
         <div class="card">
           <div class="card-head">
             <span class="plate plate-lg"><%= plate %></span>
-            <span class="badge badge-<%= r.status %>"><%= r.status === 'done' ? 'Ready for pickup' : r.status[0].toUpperCase() + r.status.slice(1) %></span>
+            <span class="badge badge-<%= r.status %>"><%= r.status === 'done' ? t('status.ready') : t('status.' + r.status) %></span>
           </div>
-          <p class="muted" style="margin-bottom:6px"><%= r.package_name %> · Ticket <%= r.code %></p>
+          <p class="muted" style="margin-bottom:6px"><%= L(r, 'package_name') %> · <%= t('status.ticket') %> <%= r.code %></p>
           <div class="timeline">
-            <div class="<%= idx >= 1 ? 'on' : '' %>">Received<br><%= time(r.created_at) %></div>
-            <div class="<%= idx >= 2 ? 'on' : '' %>">Washing<br><%= time(r.started_at) %></div>
-            <div class="<%= idx >= 3 ? 'on' : '' %>">Ready<br><%= time(r.finished_at) %></div>
+            <div class="<%= idx >= 1 ? 'on' : '' %>"><%= t('timeline.received') %><br><%= time(r.created_at) %></div>
+            <div class="<%= idx >= 2 ? 'on' : '' %>"><%= t('timeline.washing') %><br><%= time(r.started_at) %></div>
+            <div class="<%= idx >= 3 ? 'on' : '' %>"><%= t('timeline.ready') %><br><%= time(r.finished_at) %></div>
           </div>
         </div>
       <% }) %>

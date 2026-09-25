@@ -21,7 +21,7 @@ function requireLogin(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (req.session.user?.role === 'admin') return next();
-  res.status(403).render('error', { title: 'Access denied', message: 'This page is for admins only.' });
+  res.status(403).render('error', { title: req.t('error.deniedTitle'), message: req.t('error.denied') });
 }
 
 module.exports = { hashPassword, verifyPassword, requireLogin, requireAdmin };

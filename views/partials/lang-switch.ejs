@@ -1,0 +1,4 @@
+<div class="lang-switch<%= locals.dark ? ' dark' : '' %>" role="group" aria-label="<%= t('lang.label') %>">
+  <a href="<%= langUrl('id') %>" hreflang="id" lang="id"<%- lang === 'id' ? ' aria-current="true"' : '' %>>ID</a>
+  <a href="<%= langUrl('en') %>" hreflang="en" lang="en"<%- lang === 'en' ? ' aria-current="true"' : '' %>>EN</a>
+</div>

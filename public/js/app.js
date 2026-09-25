@@ -1,5 +1,8 @@
 (() => {
   const rupiah = (n) => `Rp ${Number(n || 0).toLocaleString('id-ID')}`;
+  let i18n = {};
+  try { i18n = JSON.parse(document.getElementById('i18n')?.textContent || '{}'); } catch { /* keep defaults */ }
+  const T = (key, fallback) => i18n[key] || fallback;
 
   // Mobile sidebar
   const sidebar = document.getElementById('sidebar');
@@ -41,13 +44,15 @@
     return v.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/(?<=[A-Z])(?=\d)|(?<=\d)(?=[A-Z])/g, ' ');
   }
 
+  const pkgDefault = $('sum-package').textContent;
+
   function recalc() {
     const typeId = selected('vehicle_type_id')?.value;
     // Per-package price for the selected vehicle type
     form.querySelectorAll('input[name="package_id"]').forEach((input) => {
       const price = data.prices[`${input.value}:${typeId}`];
       const label = form.querySelector(`[data-price-for="${input.value}"]`);
-      if (label) label.textContent = price != null ? rupiah(price) : 'Not available';
+      if (label) label.textContent = price != null ? rupiah(price) : T('notAvailable', 'Not available');
       input.disabled = price == null;
       if (input.disabled && input.checked) input.checked = false;
     });
@@ -61,7 +66,7 @@
     const subtotal = (pkgPrice || 0) + addons;
     const discount = Math.min(Math.max(Number($('discount').value) || 0, 0), subtotal);
 
-    $('sum-package').textContent = pkg ? pkg.closest('label').querySelector('span').firstChild.textContent.trim() : 'Package';
+    $('sum-package').textContent = pkg ? pkg.closest('label').querySelector('span').firstChild.textContent.trim() : pkgDefault;
     $('sum-package-price').textContent = pkgPrice != null ? rupiah(pkgPrice) : '—';
     $('sum-addons').textContent = rupiah(addons);
     $('sum-discount').textContent = `− ${rupiah(discount)}`;
@@ -91,14 +96,16 @@
       if (normalizePlate(plate.value) !== p) return;
       if (!vehicle) {
         hint.className = 'vehicle-hint show';
-        hint.textContent = 'New vehicle — it will be saved with this wash.';
+        hint.textContent = T('newVehicle', 'New vehicle');
         return;
       }
       hint.className = 'vehicle-hint show';
       hint.textContent = '';
       const strong = document.createElement('strong');
-      strong.textContent = 'Returning vehicle ✓ ';
-      hint.append(strong, `${vehicle.type_name}${vehicle.brand_model ? ` · ${vehicle.brand_model}` : ''}${vehicle.customer_name ? ` · ${vehicle.customer_name}` : ''} · ${vehicle.visits} previous visit(s)`);
+      strong.textContent = `${T('returning', 'Returning vehicle ✓')} `;
+      const typeName = (document.documentElement.lang === 'id' && vehicle.type_name_id) || vehicle.type_name;
+      const visits = T('visits', '{n} previous visit(s)').replace('{n}', vehicle.visits);
+      hint.append(strong, `${typeName}${vehicle.brand_model ? ` · ${vehicle.brand_model}` : ''}${vehicle.customer_name ? ` · ${vehicle.customer_name}` : ''} · ${visits}`);
       const typeInput = form.querySelector(`input[name="vehicle_type_id"][value="${vehicle.vehicle_type_id}"]`);
       if (typeInput) typeInput.checked = true;
       if (!$('brand_model').value && vehicle.brand_model) $('brand_model').value = vehicle.brand_model;

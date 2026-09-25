@@ -1,24 +1,24 @@
 <div class="ticket">
   <div class="ticket-top">
     <span class="plate"><%= t.plate %></span>
-    <% if (t.payment_status === 'paid') { %><span class="badge badge-paid">Paid</span><% } else { %><span class="badge badge-unpaid">Unpaid</span><% } %>
+    <span class="badge badge-<%= t.payment_status %>"><%= tr('pay.' + t.payment_status) %></span>
   </div>
   <div class="meta">
-    <b><%= t.package_name %></b> · <%= t.vehicle_type_name %><br>
-    <%= t.customer_name || 'Walk-in' %><%= t.brand_model ? ' · ' + t.brand_model : '' %><br>
-    <a class="row-link" href="/app/transactions/<%= t.id %>"><%= t.code %></a> · in <%= time(t.created_at) %><% if (t.started_at) { %> · start <%= time(t.started_at) %><% } %><% if (t.finished_at) { %> · done <%= time(t.finished_at) %><% } %> · <b><%= rupiah(t.total) %></b>
+    <b><%= L(t, 'package_name') %></b> · <%= L(t, 'vehicle_type_name') %><br>
+    <%= t.customer_name || tr('ticket.walkin') %><%= t.brand_model ? ' · ' + t.brand_model : '' %><br>
+    <a class="row-link" href="/app/transactions/<%= t.id %>"><%= t.code %></a> · <%= tr('ticket.in') %> <%= time(t.created_at) %><% if (t.started_at) { %> · <%= tr('ticket.start') %> <%= time(t.started_at) %><% } %><% if (t.finished_at) { %> · <%= tr('ticket.done') %> <%= time(t.finished_at) %><% } %> · <b><%= rupiah(t.total) %></b>
   </div>
   <% if (locals.actions !== false) { %>
   <div class="ticket-actions">
     <% if (t.status === 'waiting') { %>
-      <form method="post" action="/app/transactions/<%= t.id %>/status"><input type="hidden" name="action" value="start"><button class="btn btn-sm" type="submit">Start wash</button></form>
+      <form method="post" action="/app/transactions/<%= t.id %>/status"><input type="hidden" name="action" value="start"><button class="btn btn-sm" type="submit"><%= tr('action.start') %></button></form>
     <% } else if (t.status === 'washing') { %>
-      <form method="post" action="/app/transactions/<%= t.id %>/status"><input type="hidden" name="action" value="finish"><button class="btn btn-sm btn-sky" type="submit">Mark done</button></form>
+      <form method="post" action="/app/transactions/<%= t.id %>/status"><input type="hidden" name="action" value="finish"><button class="btn btn-sm btn-sky" type="submit"><%= tr('action.finish') %></button></form>
     <% } %>
     <% if (t.payment_status === 'unpaid') { %>
       <form method="post" action="/app/transactions/<%= t.id %>/pay">
-        <select name="method" aria-label="Payment method"><% methods.forEach((m) => { %><option><%= m %></option><% }) %></select>
-        <button class="btn btn-sm btn-vanilla" type="submit">Pay</button>
+        <select name="method" aria-label="<%= tr('field.paymentMethod') %>"><% methods.forEach((m) => { %><option value="<%= m %>"><%= tr('method.' + m) %></option><% }) %></select>
+        <button class="btn btn-sm btn-vanilla" type="submit"><%= tr('action.pay') %></button>
       </form>
     <% } %>
   </div>

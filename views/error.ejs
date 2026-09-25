@@ -3,7 +3,7 @@
   <div class="container" style="max-width:560px;text-align:center">
     <span class="eyebrow"><%= title %></span>
     <h1 style="font-size:40px;margin-top:18px"><%= message %></h1>
-    <p style="margin-top:28px"><a class="btn" href="<%= user ? '/app' : '/' %>">Go back <span class="arrow">→</span></a></p>
+    <p style="margin-top:28px"><a class="btn" href="<%= user ? '/app' : '/' %>"><%= t('error.back') %> <span class="arrow">→</span></a></p>
   </div>
 </section>
 </body>

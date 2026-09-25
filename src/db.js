@@ -131,6 +131,65 @@ function tx(fn) {
   }
 }
 
+// Indonesian names for the default catalog (also used to back-fill older databases).
+const DEFAULT_ID_NAMES = {
+  vehicle_types: {
+    Motorcycle: 'Motor',
+    'City Car': 'Mobil Kecil (City Car)',
+    'Sedan / MPV': 'Sedan / MPV',
+    SUV: 'SUV',
+    'Large SUV / Pickup': 'SUV Besar / Pick-up',
+  },
+  packages: {
+    'Exterior Wash': ['Cuci Luar', 'Bodi, velg, dan kaca dengan snow foam'],
+    'Full Wash': ['Cuci Luar Dalam', 'Cuci luar + vakum interior, lap dasbor, dan kaca dalam'],
+    'Premium Wash + Wax': ['Cuci Premium + Wax', 'Cuci luar dalam + wax bodi dan semir ban'],
+    'Interior Detailing': ['Detailing Interior', 'Pembersihan interior menyeluruh dengan extractor dan steam'],
+  },
+  addons: {
+    'Tire Shine': 'Semir Ban',
+    'Engine Bay Wash': 'Cuci Mesin',
+    'Underbody Wash': 'Cuci Kolong',
+    'Cabin Fragrance': 'Pewangi Kabin',
+    'Body Wax': 'Wax Bodi',
+  },
+};
+
+function hasColumn(table, column) {
+  return db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+}
+
+/** Add Indonesian name columns to databases created before bilingual support. */
+function migrate() {
+  const columns = [
+    ['vehicle_types', 'name_id'], ['packages', 'name_id'], ['packages', 'description_id'], ['addons', 'name_id'],
+    ['transactions', 'vehicle_type_name_id'], ['transactions', 'package_name_id'], ['transaction_addons', 'name_id'],
+  ];
+  const added = columns.filter(([table, col]) => !hasColumn(table, col));
+  for (const [table, col] of added) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`);
+  if (!added.length) return;
+
+  tx(() => {
+    for (const [en, idName] of Object.entries(DEFAULT_ID_NAMES.vehicle_types)) {
+      db.prepare('UPDATE vehicle_types SET name_id = ? WHERE name = ? AND name_id IS NULL').run(idName, en);
+    }
+    for (const [en, [idName, idDesc]] of Object.entries(DEFAULT_ID_NAMES.packages)) {
+      db.prepare('UPDATE packages SET name_id = ?, description_id = ? WHERE name = ? AND name_id IS NULL').run(idName, idDesc, en);
+    }
+    for (const [en, idName] of Object.entries(DEFAULT_ID_NAMES.addons)) {
+      db.prepare('UPDATE addons SET name_id = ? WHERE name = ? AND name_id IS NULL').run(idName, en);
+    }
+    // Old transactions: take the Indonesian name from the catalog item they reference.
+    db.exec(`UPDATE transactions SET
+      package_name_id = (SELECT name_id FROM packages p WHERE p.id = transactions.package_id AND p.name = transactions.package_name),
+      vehicle_type_name_id = (SELECT name_id FROM vehicle_types v WHERE v.id = transactions.vehicle_type_id AND v.name = transactions.vehicle_type_name)
+      WHERE package_name_id IS NULL`);
+    db.exec(`UPDATE transaction_addons SET
+      name_id = (SELECT name_id FROM addons a WHERE a.id = transaction_addons.addon_id AND a.name = transaction_addons.name)
+      WHERE name_id IS NULL`);
+  });
+}
+
 /** Insert default price list + admin account on an empty database. */
 function seedDefaults() {
   const hasUsers = db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0;
@@ -143,9 +202,9 @@ function seedDefaults() {
   if (hasTypes) return;
 
   tx(() => {
-    const types = ['Motorcycle', 'City Car', 'Sedan / MPV', 'SUV', 'Large SUV / Pickup'];
-    const typeIds = types.map((name, i) =>
-      Number(db.prepare('INSERT INTO vehicle_types (name, sort_order) VALUES (?, ?)').run(name, i).lastInsertRowid));
+    const types = Object.entries(DEFAULT_ID_NAMES.vehicle_types);
+    const typeIds = types.map(([name, nameId], i) =>
+      Number(db.prepare('INSERT INTO vehicle_types (name, name_id, sort_order) VALUES (?, ?, ?)').run(name, nameId, i).lastInsertRowid));
 
     const pkgs = [
       ['Exterior Wash', 'Body, wheels & glass with snow foam', [15000, 35000, 40000, 45000, 55000]],
@@ -154,7 +213,9 @@ function seedDefaults() {
       ['Interior Detailing', 'Deep interior clean with extractor & steam', [null, 350000, 400000, 475000, 550000]],
     ];
     pkgs.forEach(([name, desc, prices], i) => {
-      const pid = Number(db.prepare('INSERT INTO packages (name, description, sort_order) VALUES (?, ?, ?)').run(name, desc, i).lastInsertRowid);
+      const [nameId, descId] = DEFAULT_ID_NAMES.packages[name];
+      const pid = Number(db.prepare('INSERT INTO packages (name, name_id, description, description_id, sort_order) VALUES (?, ?, ?, ?, ?)')
+        .run(name, nameId, desc, descId, i).lastInsertRowid);
       prices.forEach((price, j) => {
         if (price != null) {
           db.prepare('INSERT INTO package_prices (package_id, vehicle_type_id, price) VALUES (?, ?, ?)').run(pid, typeIds[j], price);
@@ -163,10 +224,11 @@ function seedDefaults() {
     });
 
     [['Tire Shine', 10000], ['Engine Bay Wash', 35000], ['Underbody Wash', 30000], ['Cabin Fragrance', 10000], ['Body Wax', 40000]]
-      .forEach(([name, price]) => db.prepare('INSERT INTO addons (name, price) VALUES (?, ?)').run(name, price));
+      .forEach(([name, price]) => db.prepare('INSERT INTO addons (name, name_id, price) VALUES (?, ?, ?)').run(name, DEFAULT_ID_NAMES.addons[name], price));
   });
 }
 
+migrate();
 seedDefaults();
 
 module.exports = { db, now, today, tx };

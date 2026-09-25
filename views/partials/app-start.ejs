@@ -1,13 +1,16 @@
 <%- include('head') %>
 <% const nav = [
-  ['Workspace', [['/app', 'Dashboard', 'dashboard'], ['/app/transactions/new', 'New wash', 'plus'], ['/app/queue', 'Queue', 'queue'], ['/app/transactions', 'Transactions', 'list'], ['/app/vehicles', 'Vehicles', 'car'], ['/app/reports', 'Reports', 'chart']]],
-  ...(user.role === 'admin' ? [['Admin', [['/app/prices', 'Price list', 'tag'], ['/app/users', 'Staff', 'users']]]] : []),
+  [t('nav.workspace'), [['/app', t('nav.dashboard'), 'dashboard'], ['/app/transactions/new', t('nav.new'), 'plus'], ['/app/queue', t('nav.queue'), 'queue'], ['/app/transactions', t('nav.transactions'), 'list'], ['/app/vehicles', t('nav.vehicles'), 'car'], ['/app/reports', t('nav.reports'), 'chart']]],
+  ...(user.role === 'admin' ? [[t('nav.admin'), [['/app/prices', t('nav.prices'), 'tag'], ['/app/users', t('nav.staff'), 'users']]]] : []),
 ];
 const fullPath = path.replace(/\/$/, '') || '/';
 const isActive = (href) => href === '/app' ? fullPath === '/app' : (href === '/app/transactions' ? fullPath === href || /^\/app\/transactions\/\d+/.test(fullPath) : fullPath.startsWith(href)); %>
 <div class="mobile-bar">
   <%- include('brand', { href: '/app' }) %>
-  <button type="button" data-toggle-sidebar aria-label="Open menu"><%- include('icon', { name: 'menu' }) %></button>
+  <div class="right">
+    <%- include('lang-switch', { dark: true }) %>
+    <button type="button" data-toggle-sidebar aria-label="<%= t('nav.openMenu') %>"><%- include('icon', { name: 'menu' }) %></button>
+  </div>
 </div>
 <div class="app-shell">
   <aside class="sidebar" id="sidebar">
@@ -21,9 +24,10 @@ const isActive = (href) => href === '/app' ? fullPath === '/app' : (href === '/a
       <% }) %>
     </nav>
     <div class="me">
+      <%- include('lang-switch', { dark: true }) %>
       <strong><%= user.name %></strong>
-      <span class="small"><%= user.role === 'admin' ? 'Administrator' : 'Cashier' %> · @<%= user.username %></span>
-      <form method="post" action="/logout"><button class="btn btn-sm btn-block" type="submit">Log out</button></form>
+      <span class="small"><%= t('role.' + user.role) %> · @<%= user.username %></span>
+      <form method="post" action="/logout"><button class="btn btn-sm btn-block" type="submit"><%= t('nav.logout') %></button></form>
     </div>
   </aside>
   <main class="main">
