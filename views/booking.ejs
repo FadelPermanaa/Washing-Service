@@ -1,0 +1,98 @@
+<%- include('partials/head') %>
+<%- include('partials/site-nav', { back: true }) %>
+<section class="section booking-section">
+  <div class="container" style="max-width:980px">
+    <span class="eyebrow"><%= t('book.eyebrow') %></span>
+    <h1 class="page-title"><%= t('book.title') %></h1>
+    <p class="muted" style="max-width:620px"><%= t('book.lead') %></p>
+    <%- include('partials/flash') %>
+
+    <% if (!enabled) { %>
+      <div class="card empty"><%= t('book.disabled') %></div>
+    <% } else { %>
+    <form method="post" action="/booking" id="booking-form" class="grid-2" novalidate>
+      <%- include('partials/csrf') %>
+      <div>
+        <div class="card">
+          <h3 class="step-title"><span class="n">1</span><%= t('new.step2') %></h3>
+          <div class="choice-grid">
+            <% priceList.types.forEach((vt) => { %>
+              <label class="choice"><input type="radio" name="vehicle_type_id" value="<%= vt.id %>" required<%= v.vehicle_type_id === String(vt.id) ? ' checked' : '' %>><span><%= L(vt) %></span></label>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="step-title"><span class="n">2</span><%= t('new.step3') %></h3>
+          <div class="choice-grid">
+            <% priceList.packages.forEach((p) => { %>
+              <label class="choice"><input type="radio" name="package_id" value="<%= p.id %>" required<%= v.package_id === String(p.id) ? ' checked' : '' %>><span><%= L(p) %><small><%= L(p, 'description') %> · ± <%= t('rep.minutes', { n: p.duration_min }) %></small><span class="price" data-price-for="<%= p.id %>">—</span></span></label>
+            <% }) %>
+          </div>
+          <% if (priceList.addons.length) { %>
+            <details class="addons-more"<%= v.addon_ids.length ? ' open' : '' %>>
+              <summary><%= t('new.step4') %> <span class="muted"><%= t('new.optional') %></span></summary>
+              <div class="choice-grid" style="margin-top:10px">
+                <% priceList.addons.forEach((a) => { %>
+                  <label class="choice check"><input type="checkbox" name="addon_ids" value="<%= a.id %>"<%= v.addon_ids.includes(String(a.id)) ? ' checked' : '' %>><span><%= L(a) %><b><%= rupiah(a.price) %></b></span></label>
+                <% }) %>
+              </div>
+            </details>
+          <% } %>
+        </div>
+
+        <div class="card">
+          <h3 class="step-title"><span class="n">3</span><%= t('book.when') %></h3>
+          <div class="field">
+            <label for="date"><%= t('book.date') %></label>
+            <select id="date" name="date" required>
+              <% days.forEach((d) => { %><option value="<%= d %>"<%= v.date === d ? ' selected' : '' %>><%= new Date(d + 'T00:00:00').toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }) %></option><% }) %>
+            </select>
+          </div>
+          <noscript><button class="btn btn-sm btn-ghost" type="submit" formmethod="get" formaction="/booking" formnovalidate><%= t('book.showTimes') %></button></noscript>
+          <fieldset class="slots" id="slots" aria-live="polite">
+            <legend class="small muted"><%= t('book.time') %></legend>
+            <% const free = slots.filter((s) => s.available); %>
+            <% if (!free.length) { %><p class="muted small" data-empty><%= t('book.noSlots') %></p><% } %>
+            <div class="slot-grid">
+              <% slots.forEach((s) => { %>
+                <label class="slot"><input type="radio" name="time" value="<%= s.time %>" required<%= s.available ? '' : ' disabled' %><%= v.time === s.time && s.available ? ' checked' : '' %>><span><%= s.time %></span></label>
+              <% }) %>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="card">
+          <h3 class="step-title"><span class="n">4</span><%= t('book.you') %></h3>
+          <div class="field-row">
+            <div class="field"><label for="customer_name"><%= t('new.customer') %></label><input id="customer_name" name="customer_name" type="text" value="<%= v.customer_name %>" required maxlength="80" autocomplete="name"></div>
+            <div class="field"><label for="phone"><%= t('new.phone') %></label><input id="phone" name="phone" type="tel" value="<%= v.phone %>" required maxlength="20" placeholder="08xx" autocomplete="tel"></div>
+          </div>
+          <div class="field"><label for="plate"><%= t('new.plate') %></label><input class="plate-input" id="plate" name="plate" type="text" value="<%= v.plate %>" required maxlength="15" placeholder="B 1234 XYZ" autocomplete="off"></div>
+          <div class="field"><label for="notes"><%= t('new.notes') %> <span class="muted"><%= t('new.optional') %></span></label><textarea id="notes" name="notes" maxlength="300"><%= v.notes %></textarea></div>
+        </div>
+      </div>
+
+      <aside class="card summary" aria-label="<%= t('sum.aria') %>">
+        <h2><%= t('sum.title') %></h2>
+        <div class="line"><span id="sum-package"><%= t('sum.package') %></span><span id="sum-package-price">—</span></div>
+        <div class="line"><span><%= t('sum.addons') %></span><span id="sum-addons">Rp 0</span></div>
+        <div class="line total"><span><%= t('book.estimate') %></span><span id="sum-total">—</span></div>
+        <p class="small" style="color:#C9BAB8"><%= t('book.payAtShop') %></p>
+        <p class="small" id="unavailable" style="color:var(--vanilla)" hidden><%= t('new.unavailable') %></p>
+        <button class="btn btn-vanilla btn-lg btn-block" type="submit" id="submit-btn"><%= t('book.submit') %> <span class="arrow">→</span></button>
+      </aside>
+    </form>
+    <div class="mobile-total" aria-hidden="true">
+      <div><span class="small"><%= t('book.estimate') %></span><strong id="mobile-total">—</strong></div>
+      <button class="btn btn-vanilla" type="submit" form="booking-form" tabindex="-1"><%= t('book.submit') %> <span class="arrow">→</span></button>
+    </div>
+    <script id="price-data" type="application/json"><%- JSON.stringify({ prices: priceList.prices, addons: Object.fromEntries(priceList.addons.map((a) => [a.id, a.price])) }).replace(/</g, '\\u003c') %></script>
+    <script id="i18n" type="application/json"><%- JSON.stringify({ notAvailable: t('js.notAvailable'), noSlots: t('book.noSlots') }).replace(/</g, '\\u003c') %></script>
+    <% } %>
+  </div>
+</section>
+<%- include('partials/site-footer') %>
+<script src="/js/app.js"></script>
+</body>
+</html>

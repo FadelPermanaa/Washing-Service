@@ -11,6 +11,7 @@ router.get('/', (req, res) => {
     stats: svc.dashboardStats(),
     queue: svc.queue(),
     recent: svc.listTransactions({ date: today() }).slice(0, 8),
+    bookings: svc.upcomingToday(),
   });
 });
 
@@ -80,5 +81,24 @@ router.get('/vehicles', (req, res) => {
 router.get('/reports', (req, res) => {
   res.render('app/reports', { title: req.t('rep.title'), report: svc.monthlyReport(req.query.month) });
 });
+
+// ---------- Bookings ----------
+
+router.get('/bookings', (req, res) => {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || '') ? req.query.date : today();
+  res.render('app/bookings', { title: req.t('bookings.title'), date, rows: svc.listBookings(date) });
+});
+
+router.post('/bookings/:id', action((req, res) => {
+  const id = svc.toInt(req.params.id);
+  if (req.body.op === 'check_in') {
+    const txId = svc.checkIn(id, req.session.user.id);
+    flash(req, 'success', 'flash.checkedIn');
+    return res.redirect(req.body.back === 'dashboard' ? '/app' : `/app/transactions/${txId}`);
+  }
+  const b = svc.staffUpdate(id, String(req.body.op));
+  flash(req, 'success', `flash.booking.${req.body.op}`);
+  res.redirect(req.body.back === 'dashboard' ? '/app' : `/app/bookings?date=${b.date}`);
+}, '/app/bookings'));
 
 module.exports = router;

@@ -1,0 +1,39 @@
+<%- include('partials/head') %>
+<%- include('partials/site-nav', { back: true }) %>
+<section class="section">
+  <div class="container" style="max-width:720px" data-autorefresh="30">
+    <span class="eyebrow"><%= t('track.eyebrow') %> · <%= tx.code %></span>
+    <h1 class="page-title"><span class="plate plate-lg"><%= tx.plate %></span></h1>
+    <% const idx = { waiting: 1, washing: 2, done: 3, cancelled: 0 }[tx.status];
+       const done = tx.checks.filter((c) => c.done_at).length; %>
+    <div class="card track-card">
+      <div class="track-status">
+        <span class="badge badge-<%= tx.status %>"><%= tx.status === 'done' ? t('status.ready') : t('status.' + tx.status) %></span>
+        <p class="track-headline"><%= t('track.' + tx.status) %></p>
+      </div>
+      <% if (tx.status !== 'cancelled') { %>
+      <div class="timeline">
+        <div class="<%= idx >= 1 ? 'on' : '' %>"><%= t('timeline.received') %><br><%= time(tx.created_at) %></div>
+        <div class="<%= idx >= 2 ? 'on' : '' %>"><%= t('timeline.washing') %><br><%= time(tx.started_at) %></div>
+        <div class="<%= idx >= 3 ? 'on' : '' %>"><%= t('timeline.ready') %><br><%= time(tx.finished_at) %></div>
+      </div>
+      <% } %>
+      <% if (tx.status === 'washing' && tx.checks.length) { %>
+        <div class="progress progress-lg"><i style="width:<%= Math.round(done / tx.checks.length * 100) %>%"></i></div>
+        <p class="small muted"><%= t('work.progress', { done, total: tx.checks.length }) %><%= tx.bay_name ? ' · ' + tx.bay_name : '' %></p>
+      <% } %>
+    </div>
+    <div class="card">
+      <dl class="detail-list">
+        <dt><%= t('sum.package') %></dt><dd><%= L(tx, 'package_name') %> · <%= L(tx, 'vehicle_type_name') %></dd>
+        <% if (tx.addons.length) { %><dt><%= t('sum.addons') %></dt><dd><%= tx.addons.map((a) => L(a)).join(', ') %></dd><% } %>
+        <dt><%= t('sum.total') %></dt><dd><strong><%= rupiah(tx.total) %></strong> · <span class="badge badge-<%= tx.payment_status %>"><%= t('pay.' + tx.payment_status) %></span></dd>
+      </dl>
+    </div>
+    <p class="small muted"><%= t('track.autoRefresh') %></p>
+  </div>
+</section>
+<%- include('partials/site-footer') %>
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const { db, now, today, tx } = require('../db');
 const { UserError, normalizePlate, toInt, clean, PAYMENT_METHODS } = require('./common');
 const { packagePrice, activeAddons } = require('./catalog');
@@ -22,7 +23,7 @@ function nextCode() {
   return prefix + String(seq).padStart(3, '0');
 }
 
-function createTransaction(input, userId) {
+function createTransaction(input, userId, { bookingId = null } = {}) {
   const plate = normalizePlate(input.plate);
   if (!plate || plate.length < 3) throw new UserError('err.plate');
 
@@ -44,11 +45,11 @@ function createTransaction(input, userId) {
     const txId = Number(db.prepare(`
       INSERT INTO transactions (code, vehicle_id, customer_id, vehicle_type_id, vehicle_type_name, vehicle_type_name_id, package_id,
         package_name, package_name_id, package_price, addons_total, discount, total, payment_status, payment_method, notes,
-        created_by, created_at, paid_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        created_by, created_at, paid_at, token, booking_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       nextCode(), vehicleId, customerId, q.type.id, q.type.name, q.type.name_id ?? null, q.pkg.id, q.pkg.name, q.pkg.name_id ?? null,
       q.packagePrice, q.addonsTotal, q.discount, q.total, paid ? 'paid' : 'unpaid', method,
-      clean(input.notes, 300), userId, ts, paid ? ts : null,
+      clean(input.notes, 300), userId, ts, paid ? ts : null, crypto.randomBytes(12).toString('base64url'), bookingId,
     ).lastInsertRowid);
 
     for (const a of q.addons) {
@@ -73,6 +74,14 @@ function getTransaction(id) {
   const t = db.prepare(`${TX_SELECT} WHERE x.id = ?`).get(id);
   if (!t) return null;
   return { ...t, addons: db.prepare('SELECT * FROM transaction_addons WHERE transaction_id = ?').all(id), checks: work.getChecks(id) };
+}
+
+/** Public tracking page data, looked up by the transaction's private token. */
+function getTransactionByToken(token) {
+  if (!token || typeof token !== 'string' || token.length > 64) return null;
+  const t = db.prepare(`${TX_SELECT} WHERE x.token = ?`).get(token);
+  if (!t) return null;
+  return { ...t, addons: db.prepare('SELECT * FROM transaction_addons WHERE transaction_id = ?').all(t.id), checks: work.getChecks(t.id) };
 }
 
 function listTransactions({ date, status, q } = {}) {
@@ -138,5 +147,5 @@ function publicStatus(plate) {
 }
 
 module.exports = {
-  quote, createTransaction, getTransaction, listTransactions, queue, changeStatus, markPaid, publicStatus, TX_SELECT,
+  quote, createTransaction, getTransaction, getTransactionByToken, listTransactions, queue, changeStatus, markPaid, publicStatus, TX_SELECT,
 };

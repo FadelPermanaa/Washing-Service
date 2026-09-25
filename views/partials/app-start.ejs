@@ -2,7 +2,7 @@
 <% const nav = user.role === 'washer'
   ? [[t('nav.workspace'), [['/app/jobs', t('nav.jobs'), 'list']]]]
   : [
-    [t('nav.workspace'), [['/app', t('nav.dashboard'), 'dashboard'], ['/app/transactions/new', t('nav.new'), 'plus'], ['/app/queue', t('nav.queue'), 'queue'], ['/app/transactions', t('nav.transactions'), 'list'], ['/app/vehicles', t('nav.vehicles'), 'car'], ['/app/reports', t('nav.reports'), 'chart']]],
+    [t('nav.workspace'), [['/app', t('nav.dashboard'), 'dashboard'], ['/app/transactions/new', t('nav.new'), 'plus'], ['/app/queue', t('nav.queue'), 'queue'], ['/app/bookings', t('nav.bookings'), 'clock'], ['/app/transactions', t('nav.transactions'), 'list'], ['/app/vehicles', t('nav.vehicles'), 'car'], ['/app/reports', t('nav.reports'), 'chart']]],
     ...(user.role === 'admin' ? [[t('nav.admin'), [['/app/prices', t('nav.prices'), 'tag'], ['/app/users', t('nav.staff'), 'users'], ['/app/settings', t('nav.settings'), 'sparkle']]]] : []),
   ];
 const fullPath = path.replace(/\/$/, '') || '/';

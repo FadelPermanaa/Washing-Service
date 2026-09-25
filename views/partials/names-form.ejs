@@ -8,6 +8,7 @@
       <div class="field"><label><%= t('prices.nameId') %></label><input type="text" name="name_id" value="<%= item.name_id || '' %>" maxlength="60"></div>
     </div>
     <% if (locals.withDescription) { %>
+    <div class="field" style="max-width:220px"><label><%= t('prices.duration') %></label><input type="number" name="duration_min" value="<%= item.duration_min || 30 %>" min="10" max="480" step="5"></div>
     <div class="field-row">
       <div class="field"><label><%= t('prices.descEn') %></label><input type="text" name="description" value="<%= item.description || '' %>" maxlength="160"></div>
       <div class="field"><label><%= t('prices.descId') %></label><input type="text" name="description_id" value="<%= item.description_id || '' %>" maxlength="160"></div>

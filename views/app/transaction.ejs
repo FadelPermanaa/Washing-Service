@@ -24,6 +24,8 @@
         <% if (tx.bay_name) { %><dt><%= t('work.bay') %></dt><dd><%= tx.bay_name %></dd><% } %>
         <dt><%= t('detail.payment') %></dt><dd><%= tx.payment_status === 'paid' ? `${t('method.' + tx.payment_method)} · ${tx.paid_at}` : t('detail.notPaid') %></dd>
         <% if (tx.notes) { %><dt><%= t('detail.notes') %></dt><dd><%= tx.notes %></dd><% } %>
+        <% if (tx.booking_id) { %><dt><%= t('nav.bookings') %></dt><dd><%= t('detail.fromBooking') %></dd><% } %>
+        <dt><%= t('track.link') %></dt><dd><a href="/t/<%= tx.token %>" target="_blank" rel="noopener"><%= t('track.open') %> ↗</a> <button type="button" class="btn btn-sm btn-ghost" data-copy="<%= baseUrl %>/t/<%= tx.token %>" data-copied="<%= t('track.copied') %>"><%= t('track.copy') %></button></dd>
       </dl>
     </div>
     <% if (tx.checks.length) { %>
@@ -75,7 +77,7 @@
     <% if (tx.discount) { %><div class="r-line"><span><%= t('r.discount') %></span><span>− <%= rupiah(tx.discount) %></span></div><% } %>
     <div class="r-line r-total"><span><%= t('r.total') %></span><span><%= rupiah(tx.total) %></span></div>
     <div class="r-line"><span><%= t('r.status') %></span><span><%= tx.payment_status === 'paid' ? t('r.paid', { m: { key: 'method.' + tx.payment_method } }) : t('r.unpaid') %></span></div>
-    <div class="r-foot"><%= t('r.thanks') %><br><strong>/status</strong> <%= t('r.withPlate') %></div>
+    <div class="r-foot"><%= t('r.thanks') %><br><strong class="track-url"><%= baseUrl %>/t/<%= tx.token %></strong></div>
   </div>
 </div>
 <%- include('../partials/app-end') %>

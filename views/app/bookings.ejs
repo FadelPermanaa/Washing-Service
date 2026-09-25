@@ -1,0 +1,19 @@
+<%- include('../partials/app-start') %>
+<% const d = new Date(date + 'T00:00:00'); const shift = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+   const active = rows.filter((b) => ['pending', 'confirmed'].includes(b.status)); %>
+<div class="topbar">
+  <div><h1><%= t('bookings.title') %></h1><div class="sub"><%= d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <%= t('bookings.count', { n: active.length }) %></div></div>
+  <div class="actions">
+    <div class="date-nav">
+      <a class="icon-btn" href="/app/bookings?date=<%= shift(-1) %>" aria-label="<%= t('bookings.prev') %>">←</a>
+      <form method="get" class="inline"><input type="date" name="date" value="<%= date %>" aria-label="<%= t('col.date') %>" data-autosubmit><noscript><button class="btn btn-sm" type="submit"><%= t('rep.show') %></button></noscript></form>
+      <a class="icon-btn" href="/app/bookings?date=<%= shift(1) %>" aria-label="<%= t('bookings.next') %>">→</a>
+    </div>
+    <a class="btn btn-vanilla" href="/booking" target="_blank" rel="noopener"><%- include('../partials/icon', { name: 'plus' }) %> <%= t('bookings.new') %></a>
+  </div>
+</div>
+<div class="card">
+  <% if (!rows.length) { %><div class="empty"><%= t('bookings.none') %></div><% } %>
+  <% rows.forEach((b) => { %><%- include('../partials/booking-row', { b, back: 'list' }) %><% }) %>
+</div>
+<%- include('../partials/app-end') %>

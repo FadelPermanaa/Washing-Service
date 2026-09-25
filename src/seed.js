@@ -83,4 +83,19 @@ tx(() => {
   }
 });
 
-console.log(`Created ${created} demo transactions.`);
+// A few online bookings for today and the next days.
+let bookingsMade = 0;
+for (const [offset, time, name, plate, pkgIdx] of [
+  [0, '15:00', 'Budi Santoso', 'B 1122 KL', 1], [0, '16:30', 'Maya Sari', 'D 404 MS', 0],
+  [1, '09:00', 'Rizky Pratama', 'F 88 RZ', 2], [1, '10:30', 'Dewi Lestari', 'B 2020 DL', 3], [2, '13:00', 'Agus Salim', 'AB 9 AS', 1],
+]) {
+  const date = svc.bookableDays()[offset];
+  const pkg = packages[pkgIdx];
+  const type = types.find((vt) => prices[`${pkg.id}:${vt.id}`] != null && vt.name !== 'Motorcycle') || types[1];
+  try {
+    svc.createBooking({ customer_name: name, phone: `0812${String(1000000 + bookingsMade * 7919).slice(0, 7)}`, plate, vehicle_type_id: type.id, package_id: pkg.id, date, time }, { lang: 'id' });
+    bookingsMade++;
+  } catch { /* slot not available (e.g. already passed today) */ }
+}
+
+console.log(`Created ${created} demo transactions and ${bookingsMade} bookings.`);

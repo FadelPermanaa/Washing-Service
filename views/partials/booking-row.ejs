@@ -1,0 +1,20 @@
+<%# One booking in a staff list. Locals: b, back %>
+<div class="booking-row">
+  <div class="when"><%= b.start_time %><small><%= b.end_time %></small></div>
+  <div>
+    <div><span class="plate"><%= b.plate %></span> <span class="badge badge-booking-<%= b.status %>"><%= t('booking.status.' + b.status) %></span></div>
+    <div style="margin-top:4px"><strong><%= L(b, 'package_name') %></strong> · <%= L(b, 'vehicle_type_name') %> · <%= rupiah(b.price_estimate) %></div>
+    <div class="small muted"><%= b.customer_name %> · <a href="https://wa.me/<%= b.phone %>" target="_blank" rel="noopener">+<%= b.phone %></a> · <%= b.code %><%= b.notes ? ' · “' + b.notes + '”' : '' %></div>
+    <% if (b.tx_code) { %><div class="small"><a class="row-link" href="/app/transactions/<%= b.transaction_id %>"><%= b.tx_code %></a></div><% } %>
+  </div>
+  <div class="ops">
+    <% if (['pending', 'confirmed'].includes(b.status)) { %>
+      <form method="post" action="/app/bookings/<%= b.id %>"><%- include('csrf') %><input type="hidden" name="op" value="check_in"><input type="hidden" name="back" value="<%= back %>"><button class="btn btn-sm" type="submit"><%= t('bookings.checkIn') %></button></form>
+      <% if (b.status === 'pending') { %>
+        <form method="post" action="/app/bookings/<%= b.id %>"><%- include('csrf') %><input type="hidden" name="op" value="confirm"><input type="hidden" name="back" value="<%= back %>"><button class="btn btn-sm btn-sky" type="submit"><%= t('bookings.confirm') %></button></form>
+      <% } %>
+      <form method="post" action="/app/bookings/<%= b.id %>" data-confirm="<%= t('bookings.noShowConfirm') %>"><%- include('csrf') %><input type="hidden" name="op" value="no_show"><input type="hidden" name="back" value="<%= back %>"><button class="btn btn-sm btn-ghost" type="submit"><%= t('bookings.noShow') %></button></form>
+      <form method="post" action="/app/bookings/<%= b.id %>" data-confirm="<%= t('bookings.cancelConfirm') %>"><%- include('csrf') %><input type="hidden" name="op" value="cancel"><input type="hidden" name="back" value="<%= back %>"><button class="btn btn-sm btn-danger" type="submit"><%= t('action.cancel') %></button></form>
+    <% } %>
+  </div>
+</div>

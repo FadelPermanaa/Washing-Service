@@ -1,10 +1,5 @@
 <%- include('partials/head') %>
-<header class="site-nav">
-  <div class="container">
-    <%- include('partials/brand') %>
-    <nav class="site-links"><%- include('partials/lang-switch') %><a class="btn btn-sm btn-ghost" href="/"><%= t('status.home') %></a></nav>
-  </div>
-</header>
+<%- include('partials/site-nav', { back: true }) %>
 <section class="section">
   <div class="container" style="max-width:720px">
     <span class="eyebrow"><%= t('statusBox.eyebrow') %></span>

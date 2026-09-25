@@ -59,6 +59,9 @@ const DEFAULT_CHECKLISTS = {
   ],
 };
 
+// Typical time per package in minutes (used to block booking slots).
+const DEFAULT_DURATIONS = { 'Exterior Wash': 20, 'Full Wash': 40, 'Premium Wash + Wax': 60, 'Interior Detailing': 180 };
+
 const DEFAULT_ADDONS = [['Tire Shine', 10000], ['Engine Bay Wash', 35000], ['Underbody Wash', 30000], ['Cabin Fragrance', 10000], ['Body Wax', 40000]];
 
 function seed() {
@@ -77,8 +80,8 @@ function seed() {
 
     DEFAULT_PACKAGES.forEach(([name, desc, prices], i) => {
       const [nameId, descId] = DEFAULT_ID_NAMES.packages[name];
-      const pid = Number(db.prepare('INSERT INTO packages (name, name_id, description, description_id, sort_order) VALUES (?, ?, ?, ?, ?)')
-        .run(name, nameId, desc, descId, i).lastInsertRowid);
+      const pid = Number(db.prepare('INSERT INTO packages (name, name_id, description, description_id, sort_order, duration_min) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(name, nameId, desc, descId, i, DEFAULT_DURATIONS[name] || 30).lastInsertRowid);
       prices.forEach((price, j) => {
         if (price != null) db.prepare('INSERT INTO package_prices (package_id, vehicle_type_id, price) VALUES (?, ?, ?)').run(pid, typeIds[j], price);
       });
@@ -93,4 +96,4 @@ function seed() {
   });
 }
 
-module.exports = { seed, DEFAULT_ID_NAMES, DEFAULT_CHECKLISTS };
+module.exports = { seed, DEFAULT_ID_NAMES, DEFAULT_CHECKLISTS, DEFAULT_DURATIONS };

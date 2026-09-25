@@ -71,6 +71,7 @@
         <input type="text" name="description" placeholder="<%= t('prices.descEn') %>" maxlength="160" aria-label="<%= t('prices.descEn') %>">
         <input type="text" name="description_id" placeholder="<%= t('prices.descId') %>" maxlength="160" aria-label="<%= t('prices.descId') %>">
       </div>
+      <input type="number" name="duration_min" min="10" max="480" step="5" placeholder="<%= t('prices.duration') %>" aria-label="<%= t('prices.duration') %>" style="max-width:220px">
       <button class="btn" type="submit"><%= t('prices.addPackage') %></button>
       <p class="small muted" style="margin:8px 0 0"><%= t('prices.afterAdd') %></p>
     </form>

@@ -1,0 +1,15 @@
+<footer class="site-footer">
+  <div class="container">
+    <div>
+      <%- include('brand') %>
+      <p style="margin-top:12px;max-width:360px"><%= t('footer.tagline') %></p>
+      <% if (shop.business_address) { %><p class="small"><%= shop.business_address %></p><% } %>
+    </div>
+    <div class="small">
+      <p>© <%= new Date().getFullYear() %> <%= businessName %></p>
+      <% if (shop.business_phone) { %><p><a href="https://wa.me/<%= shop.business_phone %>" rel="noopener" target="_blank">WhatsApp +<%= shop.business_phone %></a></p><% } %>
+      <p><a href="/login"><%= t('site.staffLogin') %></a></p>
+      <%- include('lang-switch', { dark: true }) %>
+    </div>
+  </div>
+</footer>

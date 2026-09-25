@@ -35,12 +35,20 @@
       </table>
     </div>
   </div>
+  <div>
+  <% if (bookings.length) { %>
+  <div class="card">
+    <div class="card-head"><h2><%= t('dash.bookingsToday') %></h2><a class="btn btn-sm btn-ghost" href="/app/bookings"><%= t('dash.viewAll') %></a></div>
+    <% bookings.slice(0, 4).forEach((b) => { %><%- include('../partials/booking-row', { b, back: 'dashboard' }) %><% }) %>
+  </div>
+  <% } %>
   <div class="card">
     <div class="card-head"><h2><%= t('dash.inQueue') %></h2><a class="btn btn-sm btn-ghost" href="/app/queue"><%= t('dash.openQueue') %></a></div>
     <% if (!queue.washing.length && !queue.waiting.length) { %><div class="empty"><%= t('dash.queueEmpty') %></div><% } %>
     <% queue.washing.concat(queue.waiting).slice(0, 5).forEach((r) => { %>
       <%- include('../partials/ticket', { t: r, actions: false }) %>
     <% }) %>
+  </div>
   </div>
 </div>
 <%- include('../partials/app-end') %>

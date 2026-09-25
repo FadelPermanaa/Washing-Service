@@ -568,3 +568,61 @@ table.data tr:has(+ tr.edit-row) td { border-bottom: 0; }
   table.data.stack tr.edit-row td { display: block; text-align: left; border: 0; }
   table.data.stack tr.edit-row td::before { display: none; }
 }
+
+/* Booking & tracking */
+.page-title { font-size: clamp(30px, 5vw, 48px); margin: 16px 0 10px; }
+.booking-section .grid-2 { margin-top: 24px; }
+.slots { border: 0; padding: 0; margin: 12px 0 0; }
+.slots legend { margin-bottom: 8px; font-weight: 600; }
+.slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 8px; }
+.slot { position: relative; }
+.slot input { position: absolute; opacity: 0; pointer-events: none; }
+.slot span { display: block; text-align: center; padding: 10px 6px; border-radius: 12px; border: 1.5px solid var(--mocha-20); background: var(--white); font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+.slot input:checked + span { background: var(--mocha); color: var(--vanilla); border-color: var(--mocha); }
+.slot input:focus-visible + span { outline: 3px solid var(--sky); outline-offset: 2px; }
+.slot input:disabled + span { opacity: .35; text-decoration: line-through; cursor: not-allowed; }
+.addons-more summary { cursor: pointer; font-weight: 600; margin-top: 14px; }
+.notice { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 16px; margin-bottom: 22px; }
+.notice-ok { background: var(--ok-bg); color: var(--ok); }
+.notice-warn { background: var(--vanilla); color: var(--warn); }
+.actions-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.badge-booking-pending { background: var(--vanilla); color: var(--warn); }
+.badge-booking-confirmed { background: var(--sky); color: var(--info); }
+.badge-booking-checked_in { background: var(--ok-bg); color: var(--ok); }
+.badge-booking-no_show { background: var(--danger-bg); color: var(--danger); }
+.badge-booking-cancelled { background: var(--mocha-10); color: var(--mocha-60); text-decoration: line-through; }
+.track-status { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.track-headline { font-size: 20px; font-weight: 600; margin: 0 0 6px; }
+.progress-lg { height: 10px; }
+.booking-row { display: grid; grid-template-columns: 90px 1fr auto; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--mocha-10); }
+.booking-row:last-child { border-bottom: 0; }
+.booking-row .when { font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.booking-row .when small { display: block; font-weight: 500; font-size: 12px; color: var(--mocha-60); }
+.booking-row .ops { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 600px) {
+  .booking-row { grid-template-columns: 70px 1fr; }
+  .booking-row .ops { grid-column: 1 / -1; justify-content: flex-start; }
+}
+.switch-row { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; margin: 6px 0; cursor: pointer; }
+.switch-row input { width: 18px; height: 18px; accent-color: var(--mocha); }
+.days-field { border: 0; padding: 0; margin: 4px 0 16px; }
+.days-field legend { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+.day-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+.day-chips .choice > span { padding: 8px 12px; font-size: 13px; }
+div > .card + .card, div > form.card + form.card { margin-top: 18px; }
+.brand { white-space: nowrap; }
+.site-links .btn { white-space: nowrap; }
+.summary .total { flex-wrap: wrap; align-items: baseline; }
+.summary .total span:first-child { font-size: 17px; }
+.eyebrow { max-width: 100%; }
+@media (max-width: 600px) {
+  .site-nav .brand { font-size: 16px; gap: 8px; }
+  .site-nav .brand-mark { width: 30px; height: 30px; }
+  .site-links { gap: 8px; }
+  .site-links .btn { padding: 8px 12px; }
+  .site-links .btn .arrow { display: none; }
+  .site-nav .lang-switch a { padding: 5px 8px; }
+}
+.date-nav { display: flex; align-items: center; gap: 6px; }
+.date-nav input { width: auto; }
+a.icon-btn { text-decoration: none; }

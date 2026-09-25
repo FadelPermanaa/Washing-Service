@@ -1,17 +1,5 @@
 <%- include('partials/head') %>
-<header class="site-nav">
-  <div class="container">
-    <%- include('partials/brand') %>
-    <nav class="site-links" aria-label="Main">
-      <a href="#services"><%= t('site.services') %></a>
-      <a href="#pricing"><%= t('site.pricing') %></a>
-      <a href="#how"><%= t('site.how') %></a>
-      <a href="#status"><%= t('site.status') %></a>
-      <%- include('partials/lang-switch') %>
-      <a class="btn btn-sm" href="/login"><%= t('site.staffLogin') %> <span class="arrow">→</span></a>
-    </nav>
-  </div>
-</header>
+<%- include('partials/site-nav') %>
 
 <section class="hero">
   <div class="container hero-grid">
@@ -20,8 +8,8 @@
       <h1><%- t('hero.title') %></h1>
       <p class="lead"><%= t('hero.lead') %></p>
       <div class="hero-cta">
-        <a class="btn btn-lg" href="#pricing"><%= t('hero.ctaPrices') %> <span class="arrow">→</span></a>
-        <a class="btn btn-lg btn-ghost" href="#status"><%= t('hero.ctaStatus') %></a>
+        <% if (shop.booking_enabled === '1') { %><a class="btn btn-lg" href="/booking"><%= t('site.book') %> <span class="arrow">→</span></a><% } %>
+        <a class="btn btn-lg<%= shop.booking_enabled === '1' ? ' btn-ghost' : '' %>" href="#pricing"><%= t('hero.ctaPrices') %></a>
       </div>
     </div>
     <div class="hero-card" aria-label="<%= t('hero.cardAria') %>">
@@ -152,18 +140,6 @@
   </div>
 </section>
 
-<footer class="site-footer">
-  <div class="container">
-    <div>
-      <%- include('partials/brand') %>
-      <p style="margin-top:12px;max-width:360px"><%= t('footer.tagline') %></p>
-    </div>
-    <div class="small">
-      <p>© <%= new Date().getFullYear() %> <%= businessName %></p>
-      <p><a href="/login"><%= t('site.staffLogin') %></a></p>
-      <%- include('partials/lang-switch', { dark: true }) %>
-    </div>
-  </div>
-</footer>
+<%- include('partials/site-footer') %>
 </body>
 </html>

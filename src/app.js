@@ -5,6 +5,7 @@ const session = require('express-session');
 const { requireLogin, requireRole, requireAdmin } = require('./auth');
 const { i18nMiddleware } = require('./i18n');
 const { csrf } = require('./security');
+const settings = require('./settings');
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -42,11 +43,14 @@ app.use((req, res, next) => {
   res.locals.businessName = BUSINESS_NAME;
   res.locals.rupiah = rupiah;
   res.locals.time = (ts) => (ts ? ts.slice(11, 16) : '—');
+  res.locals.shop = settings.all();
+  res.locals.baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
   next();
 });
 app.use(csrf());
 
 app.use('/', require('./routes/public'));
+app.use('/', require('./routes/booking'));
 
 const staff = express.Router();
 staff.use(requireLogin);

@@ -1,7 +1,7 @@
 // Versioned schema migrations. The applied version is stored in SQLite's `PRAGMA user_version`.
 // Append new migrations to the end of the list; never edit one that has shipped.
 const { db, tx, hasColumn } = require('./db');
-const { DEFAULT_ID_NAMES, DEFAULT_CHECKLISTS } = require('./defaults');
+const { DEFAULT_ID_NAMES, DEFAULT_CHECKLISTS, DEFAULT_DURATIONS } = require('./defaults');
 
 const migrations = [
   // 1 — base schema (the "simple" version). IF NOT EXISTS keeps it safe on databases created before versioning.
@@ -173,6 +173,47 @@ const migrations = [
     for (const [pkgName, items] of Object.entries(DEFAULT_CHECKLISTS)) {
       const pkg = db.prepare('SELECT id FROM packages WHERE name = ?').get(pkgName);
       if (pkg) items.forEach(([en, idLabel], i) => insert.run(pkg.id, en, idLabel, i));
+    }
+  },
+
+  // 4 — settings, online bookings, private tracking links.
+  () => {
+    db.exec(`
+      CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT);
+
+      ALTER TABLE packages ADD COLUMN duration_min INTEGER NOT NULL DEFAULT 30;
+
+      CREATE TABLE bookings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT NOT NULL UNIQUE,
+        token TEXT NOT NULL UNIQUE,
+        customer_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        plate TEXT NOT NULL,
+        vehicle_type_id INTEGER NOT NULL REFERENCES vehicle_types(id),
+        package_id INTEGER NOT NULL REFERENCES packages(id),
+        addon_ids TEXT NOT NULL DEFAULT '[]',
+        date TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        price_estimate INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('pending', 'confirmed', 'checked_in', 'no_show', 'cancelled')),
+        notes TEXT,
+        lang TEXT NOT NULL DEFAULT 'id',
+        source TEXT NOT NULL DEFAULT 'online',
+        transaction_id INTEGER REFERENCES transactions(id),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX idx_bookings_date ON bookings(date, status);
+
+      ALTER TABLE transactions ADD COLUMN token TEXT;
+      ALTER TABLE transactions ADD COLUMN booking_id INTEGER REFERENCES bookings(id);
+      UPDATE transactions SET token = lower(hex(randomblob(12))) WHERE token IS NULL;
+      CREATE UNIQUE INDEX idx_tx_token ON transactions(token);
+    `);
+    for (const [name, minutes] of Object.entries(DEFAULT_DURATIONS)) {
+      db.prepare('UPDATE packages SET duration_min = ? WHERE name = ?').run(minutes, name);
     }
   },
 ];

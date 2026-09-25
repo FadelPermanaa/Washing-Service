@@ -2,6 +2,7 @@ const express = require('express');
 const { db, now, tx } = require('../db');
 const { hashPassword } = require('../auth');
 const svc = require('../services');
+const settings = require('../settings');
 const { flash, action } = require('./util');
 
 const router = express.Router();
@@ -58,8 +59,8 @@ router.post('/catalog/:kind', action((req, res) => {
     db.prepare('INSERT INTO addons (name, name_id, price) VALUES (?, ?, ?)').run(name, nameId, Math.max(0, toInt(req.body.price)));
   } else if (table === 'packages') {
     const order = db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM packages').get().n;
-    db.prepare('INSERT INTO packages (name, name_id, description, description_id, sort_order) VALUES (?, ?, ?, ?, ?)')
-      .run(name, nameId, clean(req.body.description, 160), clean(req.body.description_id, 160), order);
+    db.prepare('INSERT INTO packages (name, name_id, description, description_id, sort_order, duration_min) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(name, nameId, clean(req.body.description, 160), clean(req.body.description_id, 160), order, Math.min(480, Math.max(10, toInt(req.body.duration_min, 30))));
   } else {
     const order = db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM vehicle_types').get().n;
     db.prepare('INSERT INTO vehicle_types (name, name_id, sort_order) VALUES (?, ?, ?)').run(name, nameId, order);
@@ -81,8 +82,9 @@ router.post('/catalog/:kind/:id/names', action((req, res) => {
   if (!name) throw new UserError('err.nameRequired');
   if (db.prepare(`SELECT 1 FROM ${table} WHERE name = ? AND id != ?`).get(name, id)) throw new UserError('err.exists', { name });
   if (table === 'packages') {
-    db.prepare('UPDATE packages SET name = ?, name_id = ?, description = ?, description_id = ? WHERE id = ?')
-      .run(name, clean(req.body.name_id, 60), clean(req.body.description, 160), clean(req.body.description_id, 160), id);
+    const duration = Math.min(8 * 60, Math.max(10, toInt(req.body.duration_min, 30)));
+    db.prepare('UPDATE packages SET name = ?, name_id = ?, description = ?, description_id = ?, duration_min = ? WHERE id = ?')
+      .run(name, clean(req.body.name_id, 60), clean(req.body.description, 160), clean(req.body.description_id, 160), duration, id);
   } else {
     db.prepare(`UPDATE ${table} SET name = ?, name_id = ? WHERE id = ?`).run(name, clean(req.body.name_id, 60), id);
   }
@@ -150,8 +152,33 @@ router.post('/users/:id/password', action((req, res) => {
 // ---------- Settings: wash bays ----------
 
 router.get('/settings', (req, res) => {
-  res.render('app/settings', { title: req.t('settings.title'), bays: svc.listBays({ activeOnly: false }) });
+  res.render('app/settings', { title: req.t('settings.title'), bays: svc.listBays({ activeOnly: false }), s: settings.all() });
 });
+
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+router.post('/settings/booking', action((req, res) => {
+  const b = req.body;
+  if (!TIME.test(b.open_time || '') || !TIME.test(b.close_time || '') || b.open_time >= b.close_time) throw new UserError('err.hours');
+  settings.set({
+    booking_enabled: b.booking_enabled === '1' ? '1' : '0',
+    booking_auto_confirm: b.booking_auto_confirm === '1' ? '1' : '0',
+    open_time: b.open_time,
+    close_time: b.close_time,
+    closed_days: [].concat(b.closed_days || []).map((d) => toInt(d)).filter((d) => d >= 0 && d <= 6).join(','),
+    slot_minutes: String(Math.min(120, Math.max(10, toInt(b.slot_minutes, 30)))),
+    booking_days_ahead: String(Math.min(60, Math.max(1, toInt(b.booking_days_ahead, 14)))),
+    booking_min_notice: String(Math.min(24 * 60, Math.max(0, toInt(b.booking_min_notice, 60)))),
+  });
+  flash(req, 'success', 'flash.saved');
+  res.redirect('/app/settings#booking');
+}, '/app/settings'));
+
+router.post('/settings/business', action((req, res) => {
+  settings.set({ business_phone: svc.normalizePhone(req.body.business_phone), business_address: clean(req.body.business_address, 200) || '' });
+  flash(req, 'success', 'flash.saved');
+  res.redirect('/app/settings#business');
+}, '/app/settings'));
 
 router.post('/bays', action((req, res) => {
   const name = clean(req.body.name, 40);

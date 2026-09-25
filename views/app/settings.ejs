@@ -1,8 +1,46 @@
 <%- include('../partials/app-start') %>
+<% const closed = s.closed_days.split(',').filter(Boolean);
+   const weekday = (i) => new Date(2024, 0, 7 + i).toLocaleDateString(locale, { weekday: 'long' }); %>
 <div class="topbar">
   <div><h1><%= t('settings.title') %></h1><div class="sub"><%= t('settings.sub') %></div></div>
 </div>
 <div class="grid-2-even">
+  <div>
+    <form class="card" id="booking" method="post" action="/app/settings/booking"><%- include('../partials/csrf') %>
+      <h2><%= t('settings.booking') %></h2>
+      <label class="switch-row"><input type="checkbox" name="booking_enabled" value="1"<%= s.booking_enabled === '1' ? ' checked' : '' %>> <%= t('settings.bookingEnabled') %></label>
+      <label class="switch-row"><input type="checkbox" name="booking_auto_confirm" value="1"<%= s.booking_auto_confirm === '1' ? ' checked' : '' %>> <%= t('settings.autoConfirm') %></label>
+      <p class="small muted"><%= t('settings.autoConfirmHint') %></p>
+      <div class="field-row">
+        <div class="field"><label for="open_time"><%= t('settings.open') %></label><input id="open_time" type="time" name="open_time" value="<%= s.open_time %>" required></div>
+        <div class="field"><label for="close_time"><%= t('settings.close') %></label><input id="close_time" type="time" name="close_time" value="<%= s.close_time %>" required></div>
+      </div>
+      <fieldset class="field days-field">
+        <legend><%= t('settings.closedDays') %></legend>
+        <div class="day-chips">
+          <% for (let i = 0; i < 7; i++) { %>
+            <label class="choice check"><input type="checkbox" name="closed_days" value="<%= i %>"<%= closed.includes(String(i)) ? ' checked' : '' %>><span><%= weekday(i) %></span></label>
+          <% } %>
+        </div>
+      </fieldset>
+      <div class="field-row">
+        <div class="field"><label for="slot_minutes"><%= t('settings.slotMinutes') %></label><input id="slot_minutes" type="number" name="slot_minutes" min="10" max="120" step="5" value="<%= s.slot_minutes %>"></div>
+        <div class="field"><label for="booking_days_ahead"><%= t('settings.daysAhead') %></label><input id="booking_days_ahead" type="number" name="booking_days_ahead" min="1" max="60" value="<%= s.booking_days_ahead %>"></div>
+      </div>
+      <div class="field" style="max-width:50%"><label for="booking_min_notice"><%= t('settings.minNotice') %></label><input id="booking_min_notice" type="number" name="booking_min_notice" min="0" max="1440" step="15" value="<%= s.booking_min_notice %>"></div>
+      <p class="small muted"><%= t('settings.durationHint') %></p>
+      <button class="btn" type="submit"><%= t('prices.saveOne') %></button>
+      <p class="small" style="margin:12px 0 0"><a href="/booking" target="_blank" rel="noopener"><%= t('settings.openBooking') %> ↗</a></p>
+    </form>
+
+    <form class="card" id="business" method="post" action="/app/settings/business"><%- include('../partials/csrf') %>
+      <h2><%= t('settings.business') %></h2>
+      <div class="field"><label for="business_phone"><%= t('settings.businessPhone') %></label><input id="business_phone" type="tel" name="business_phone" value="<%= s.business_phone %>" placeholder="0812…" maxlength="20"></div>
+      <div class="field"><label for="business_address"><%= t('settings.address') %></label><input id="business_address" type="text" name="business_address" value="<%= s.business_address %>" maxlength="200"></div>
+      <button class="btn" type="submit"><%= t('prices.saveOne') %></button>
+    </form>
+  </div>
+
   <section class="card" id="bays">
     <h2><%= t('settings.bays') %></h2>
     <p class="small muted"><%= t('settings.baysHint') %></p>

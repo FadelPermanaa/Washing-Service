@@ -30,6 +30,8 @@
 
   document.querySelectorAll('[data-print]').forEach((btn) => btn.addEventListener('click', () => window.print()));
 
+  document.querySelectorAll('[data-autosubmit]').forEach((el) => el.addEventListener('change', () => el.form.submit()));
+
   // Confirm dangerous actions
   document.querySelectorAll('form[data-confirm]').forEach((f) => {
     f.addEventListener('submit', (e) => { if (!confirm(f.dataset.confirm)) e.preventDefault(); });
@@ -65,8 +67,20 @@
     });
   });
 
-  // ---------- New transaction form ----------
-  const form = document.getElementById('tx-form');
+  // Copy-to-clipboard buttons
+  document.querySelectorAll('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy);
+        const old = btn.textContent;
+        btn.textContent = btn.dataset.copied || '✓';
+        setTimeout(() => { btn.textContent = old; }, 1500);
+      } catch { window.prompt('', btn.dataset.copy); }
+    });
+  });
+
+  // ---------- Price forms: new wash (staff) and online booking (public) ----------
+  const form = document.getElementById('tx-form') || document.getElementById('booking-form');
   if (!form) return;
   const data = JSON.parse(document.getElementById('price-data').textContent);
   const $ = (id) => document.getElementById(id);
@@ -96,12 +110,12 @@
     const pkgPrice = pkg ? data.prices[`${pkg.value}:${typeId}`] : null;
     const addons = [...form.querySelectorAll('input[name="addon_ids"]:checked')].reduce((s, a) => s + (data.addons[a.value] || 0), 0);
     const subtotal = (pkgPrice || 0) + addons;
-    const discount = Math.min(Math.max(Number($('discount').value) || 0, 0), subtotal);
+    const discount = $('discount') ? Math.min(Math.max(Number($('discount').value) || 0, 0), subtotal) : 0;
 
     $('sum-package').textContent = pkg ? pkg.closest('label').querySelector('span').firstChild.textContent.trim() : pkgDefault;
     $('sum-package-price').textContent = pkgPrice != null ? rupiah(pkgPrice) : '—';
     $('sum-addons').textContent = rupiah(addons);
-    $('sum-discount').textContent = `− ${rupiah(discount)}`;
+    if ($('sum-discount')) $('sum-discount').textContent = `− ${rupiah(discount)}`;
     $('sum-total').textContent = pkgPrice != null ? rupiah(subtotal - discount) : '—';
     if ($('mobile-total')) $('mobile-total').textContent = $('sum-total').textContent;
     $('unavailable').hidden = pkgPrice != null;
@@ -109,10 +123,49 @@
   }
 
   form.addEventListener('change', recalc);
-  $('discount').addEventListener('input', recalc);
-  $('pay_now').addEventListener('change', (e) => { $('method-field').hidden = !e.target.checked; });
+  $('discount')?.addEventListener('input', recalc);
+  $('pay_now')?.addEventListener('change', (e) => { $('method-field').hidden = !e.target.checked; });
 
-  // Returning-vehicle lookup by plate
+  // Booking: reload the free time slots when the date or package changes.
+  const slotBox = $('slots');
+  if (slotBox) {
+    const grid = slotBox.querySelector('.slot-grid');
+    let seq = 0;
+    async function loadSlots() {
+      const date = $('date').value;
+      const pkg = selected('package_id')?.value;
+      if (!date || !pkg) return;
+      const mine = ++seq;
+      const keep = selected('time')?.value;
+      try {
+        const res = await fetch(`/booking/slots?date=${encodeURIComponent(date)}&package_id=${encodeURIComponent(pkg)}`, { headers: { Accept: 'application/json' } });
+        const { slots } = await res.json();
+        if (mine !== seq) return;
+        grid.replaceChildren(...slots.map((s) => {
+          const label = document.createElement('label');
+          label.className = 'slot';
+          const input = document.createElement('input');
+          Object.assign(input, { type: 'radio', name: 'time', value: s.time, required: true, disabled: !s.available, checked: s.available && s.time === keep });
+          const span = document.createElement('span');
+          span.textContent = s.time;
+          label.append(input, span);
+          return label;
+        }));
+        slotBox.querySelector('[data-empty]')?.remove();
+        if (!slots.some((s) => s.available)) {
+          const p = document.createElement('p');
+          p.className = 'muted small';
+          p.dataset.empty = '';
+          p.textContent = T('noSlots', 'No free times');
+          grid.before(p);
+        }
+      } catch { /* keep the current slots */ }
+    }
+    $('date').addEventListener('change', loadSlots);
+    form.querySelectorAll('input[name="package_id"]').forEach((i) => i.addEventListener('change', loadSlots));
+  }
+
+  // Staff form: returning-vehicle lookup by plate
   const plate = $('plate');
   const hint = $('vehicle-hint');
   let timer;
@@ -147,8 +200,13 @@
       recalc();
     } catch { /* offline or server error: the form still works without the lookup */ }
   }
-  plate.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(lookup, 400); });
-  plate.addEventListener('blur', () => { plate.value = normalizePlate(plate.value); lookup(); });
+  if (plate) {
+    plate.addEventListener('blur', () => { plate.value = normalizePlate(plate.value); });
+    if (hint) {
+      plate.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(lookup, 400); });
+      plate.addEventListener('blur', lookup);
+    }
+  }
 
   // Hide the sticky total bar once the full summary is on screen
   const bar = document.querySelector('.mobile-total');
@@ -158,5 +216,5 @@
   }
 
   recalc();
-  if (plate.value) lookup();
+  if (plate?.value && hint) lookup();
 })();

@@ -1,0 +1,16 @@
+<header class="site-nav">
+  <div class="container">
+    <%- include('brand') %>
+    <nav class="site-links" aria-label="Main">
+      <% if (!locals.back) { %>
+        <a href="/#services"><%= t('site.services') %></a>
+        <a href="/#pricing"><%= t('site.pricing') %></a>
+        <a href="/#status"><%= t('site.status') %></a>
+      <% } else { %>
+        <a href="/"><%= t('status.home') %></a>
+      <% } %>
+      <%- include('lang-switch') %>
+      <% if (shop.booking_enabled === '1') { %><a class="btn btn-sm" href="/booking"><%= t('site.book') %> <span class="arrow">→</span></a><% } %>
+    </nav>
+  </div>
+</header>

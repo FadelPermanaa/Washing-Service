@@ -28,9 +28,10 @@ test('every key used in views and routes exists', () => {
   walk(path.join(root, 'views'));
   walk(path.join(root, 'src'));
   const missing = new Set();
+  const known = (k) => (k.endsWith('.') ? Object.keys(en).some((x) => x.startsWith(k)) : k in en);
   for (const f of files) {
     const src = fs.readFileSync(f, 'utf8');
-    for (const m of src.matchAll(/\b(?:t|tr|req\.t)\('([a-zA-Z]+\.[\w.-]+)'/g)) if (!(m[1] in en)) missing.add(`${m[1]} (${path.relative(root, f)})`);
+    for (const m of src.matchAll(/\b(?:t|tr|req\.t)\('([a-zA-Z]+\.[\w.-]+)'/g)) if (!known(m[1])) missing.add(`${m[1]} (${path.relative(root, f)})`);
     for (const m of src.matchAll(/UserError\('([\w.]+)'/g)) if (!(m[1] in en)) missing.add(`${m[1]} (${path.relative(root, f)})`);
     for (const m of src.matchAll(/flash\(req, '\w+', '([\w.]+)'/g)) if (!(m[1] in en)) missing.add(`${m[1]} (${path.relative(root, f)})`);
   }
