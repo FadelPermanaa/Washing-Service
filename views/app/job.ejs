@@ -1,0 +1,29 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div>
+    <a class="small" href="<%= user.role === 'washer' ? '/app/jobs' : '/app/transactions/' + tx.id %>"><%= user.role === 'washer' ? t('jobs.back') : t('detail.back') %></a>
+    <h1 style="margin-top:6px"><span class="plate plate-lg"><%= tx.plate %></span></h1>
+    <div class="sub"><%= L(tx, 'package_name') %> · <%= L(tx, 'vehicle_type_name') %><%= tx.bay_name ? ' · ' + tx.bay_name : '' %></div>
+  </div>
+  <span class="badge badge-<%= tx.status %>"><%= t('status.' + tx.status) %></span>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <h2><%= t('work.checklist') %></h2>
+    <%- include('../partials/checklist-list', { tx, back: 'job' }) %>
+  </div>
+  <div class="card">
+    <dl class="detail-list">
+      <dt><%= t('detail.vehicle') %></dt><dd><%= [tx.brand_model, tx.color].filter(Boolean).join(' · ') || '—' %></dd>
+      <% if (tx.addons.length) { %><dt><%= t('sum.addons') %></dt><dd><%= tx.addons.map((a) => L(a)).join(', ') %></dd><% } %>
+      <% if (tx.notes) { %><dt><%= t('detail.notes') %></dt><dd><strong><%= tx.notes %></strong></dd><% } %>
+      <dt><%= t('jobs.started') %></dt><dd><%= time(tx.started_at) %></dd>
+    </dl>
+    <% if (tx.status === 'washing') { %>
+      <form method="post" action="/app/jobs/<%= tx.id %>/finish" style="margin-top:18px" data-confirm-open="<%= t('jobs.finishConfirm') %>"><%- include('../partials/csrf') %>
+        <button class="btn btn-lg btn-block" type="submit"><%= t('jobs.finish') %> <span class="arrow">→</span></button>
+      </form>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/app-end') %>

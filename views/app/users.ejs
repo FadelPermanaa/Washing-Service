@@ -1,4 +1,6 @@
 <%- include('../partials/app-start') %>
+<% const roles = ['cashier', 'washer', 'admin'];
+   const commissionText = (u) => u.role !== 'washer' ? '—' : (u.commission_type === 'percent' ? t('users.percent', { v: u.commission_value }) : t('users.perCar', { v: rupiah(u.commission_value) })); %>
 <div class="topbar">
   <div><h1><%= t('users.title') %></h1><div class="sub"><%= t('users.sub') %></div></div>
 </div>
@@ -6,33 +8,62 @@
   <div class="card">
     <div class="table-wrap">
       <table class="data stack">
-        <thead><tr><th><%= t('col.name') %></th><th><%= t('col.username') %></th><th><%= t('col.role') %></th><th><%= t('col.status') %></th><th><%= t('col.resetPassword') %></th><th></th></tr></thead>
+        <thead><tr><th><%= t('col.name') %></th><th><%= t('col.role') %></th><th><%= t('users.commission') %></th><th><%= t('col.status') %></th><th></th></tr></thead>
         <tbody>
           <% users.forEach((u) => { %>
             <tr class="<%= u.active ? '' : 'inactive' %>">
-              <td data-label="<%= t('col.name') %>"><strong><%= u.name %></strong></td>
-              <td data-label="<%= t('col.username') %>">@<%= u.username %></td>
-              <td data-label="<%= t('col.role') %>"><span class="badge <%= u.role === 'admin' ? 'badge-paid' : 'badge-washing' %>"><%= t('role.' + u.role) %></span></td>
+              <td data-label="<%= t('col.name') %>"><strong><%= u.name %></strong><div class="small muted">@<%= u.username %><%= u.phone ? ' · ' + u.phone : '' %></div></td>
+              <td data-label="<%= t('col.role') %>"><span class="badge <%= u.role === 'admin' ? 'badge-paid' : u.role === 'washer' ? 'badge-waiting' : 'badge-washing' %>"><%= t('role.' + u.role) %></span></td>
+              <td data-label="<%= t('users.commission') %>" class="nowrap"><%= commissionText(u) %></td>
               <td data-label="<%= t('col.status') %>"><%= u.active ? t('users.active') : t('users.disabled') %></td>
-              <td data-label="<%= t('col.resetPassword') %>"><form class="filters" style="margin:0;flex-wrap:nowrap" method="post" action="/app/users/<%= u.id %>/password">
-                <%- include('../partials/csrf') %>
-                <input type="password" name="password" placeholder="<%= t('users.newPassword') %>" minlength="6" required aria-label="<%= t('users.newPassword') %> — <%= u.username %>" autocomplete="new-password" style="min-width:140px">
-                <button class="btn btn-sm" type="submit"><%= t('users.set') %></button>
-              </form></td>
               <td data-label="" class="num"><% if (u.id !== user.id) { %><form method="post" action="/app/users/<%= u.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= u.active ? t('users.disable') : t('users.enable') %></button></form><% } else { %><span class="small muted"><%= t('users.you') %></span><% } %></td>
+            </tr>
+            <tr class="edit-row">
+              <td colspan="5">
+                <details class="names-edit">
+                  <summary><%= t('users.edit') %> · <%= u.name %></summary>
+                  <form method="post" action="/app/users/<%= u.id %>/profile" class="user-edit"><%- include('../partials/csrf') %>
+                    <div class="field-row">
+                      <div class="field"><label><%= t('users.fullName') %></label><input name="name" type="text" value="<%= u.name %>" required maxlength="60"></div>
+                      <div class="field"><label><%= t('users.phone') %></label><input name="phone" type="tel" value="<%= u.phone || '' %>" maxlength="20"></div>
+                    </div>
+                    <div class="field-row">
+                      <div class="field"><label><%= t('users.role') %></label><select name="role"><% roles.forEach((r) => { %><option value="<%= r %>"<%= u.role === r ? ' selected' : '' %>><%= t('role.' + r) %></option><% }) %></select></div>
+                      <div class="field"><label><%= t('users.commission') %></label>
+                        <div class="inline" style="display:flex;gap:6px">
+                          <select name="commission_type" style="flex:1"><option value="fixed"<%= u.commission_type === 'fixed' ? ' selected' : '' %>><%= t('users.commissionFixed') %></option><option value="percent"<%= u.commission_type === 'percent' ? ' selected' : '' %>><%= t('users.commissionPercent') %></option></select>
+                          <input name="commission_value" type="number" min="0" step="1" value="<%= u.commission_value %>" style="width:120px" aria-label="<%= t('users.commission') %>">
+                        </div>
+                      </div>
+                    </div>
+                    <button class="btn btn-sm" type="submit"><%= t('prices.saveOne') %></button>
+                  </form>
+                  <form class="filters" style="margin:12px 0 0" method="post" action="/app/users/<%= u.id %>/password"><%- include('../partials/csrf') %>
+                    <input type="password" name="password" placeholder="<%= t('users.newPassword') %>" minlength="6" required aria-label="<%= t('users.newPassword') %> — <%= u.username %>" autocomplete="new-password" style="flex:1">
+                    <button class="btn btn-sm" type="submit"><%= t('col.resetPassword') %></button>
+                  </form>
+                </details>
+              </td>
             </tr>
           <% }) %>
         </tbody>
       </table>
     </div>
   </div>
-  <form class="card" method="post" action="/app/users">
-    <%- include('../partials/csrf') %>
+  <form class="card" method="post" action="/app/users"><%- include('../partials/csrf') %>
     <h2><%= t('users.add') %></h2>
     <div class="field"><label for="u-name"><%= t('users.fullName') %></label><input id="u-name" name="name" type="text" required maxlength="60"></div>
     <div class="field"><label for="u-username"><%= t('col.username') %></label><input id="u-username" name="username" type="text" required pattern="[a-zA-Z0-9._\-]{3,30}" maxlength="30" autocomplete="off"></div>
     <div class="field"><label for="u-password"><%= t('login.password') %></label><input id="u-password" name="password" type="password" required minlength="6" autocomplete="new-password"></div>
-    <div class="field"><label for="u-role"><%= t('users.role') %></label><select id="u-role" name="role"><option value="cashier"><%= t('role.cashier') %></option><option value="admin"><%= t('role.admin') %></option></select></div>
+    <div class="field"><label for="u-phone"><%= t('users.phone') %> <span class="muted"><%= t('new.optional') %></span></label><input id="u-phone" name="phone" type="tel" maxlength="20" placeholder="08xx"></div>
+    <div class="field"><label for="u-role"><%= t('users.role') %></label><select id="u-role" name="role"><% roles.forEach((r) => { %><option value="<%= r %>"><%= t('role.' + r) %></option><% }) %></select></div>
+    <div class="field"><label for="u-ctype"><%= t('users.commission') %></label>
+      <div style="display:flex;gap:6px">
+        <select id="u-ctype" name="commission_type" style="flex:1"><option value="fixed"><%= t('users.commissionFixed') %></option><option value="percent"><%= t('users.commissionPercent') %></option></select>
+        <input name="commission_value" type="number" min="0" step="1" value="0" style="width:120px" aria-label="<%= t('users.commission') %>">
+      </div>
+      <p class="small muted" style="margin:6px 0 0"><%= t('users.commissionHint') %></p>
+    </div>
     <button class="btn btn-block" type="submit"><%= t('users.create') %></button>
   </form>
 </div>

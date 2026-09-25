@@ -1,0 +1,34 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div>
+    <a class="small" href="/app/prices"><%= t('checklist.back') %></a>
+    <h1 style="margin-top:6px"><%= t('checklist.title') %> · <%= L(pkg) %></h1>
+    <div class="sub"><%= t('checklist.sub', { pkg: L(pkg) }) %></div>
+  </div>
+</div>
+<div class="card" style="max-width:860px">
+  <% if (!items.length) { %><p class="muted"><%= t('checklist.empty') %></p><% } %>
+  <div class="list-rows">
+    <% items.forEach((it, i) => { %>
+      <div class="list-row">
+        <span class="mono muted"><%= i + 1 %>.</span>
+        <form class="inline grow" method="post" action="/app/checklists/<%= pkg.id %>/<%= it.id %>" style="flex-wrap:wrap"><%- include('../partials/csrf') %>
+          <input type="text" name="label" value="<%= it.label %>" required maxlength="80" aria-label="<%= t('checklist.labelEn') %>" style="flex:1;min-width:160px">
+          <input type="text" name="label_id" value="<%= it.label_id || '' %>" maxlength="80" aria-label="<%= t('checklist.labelId') %>" placeholder="<%= t('checklist.labelId') %>" style="flex:1;min-width:160px">
+          <button class="btn btn-sm" type="submit"><%= t('prices.saveOne') %></button>
+        </form>
+        <form method="post" action="/app/checklists/<%= pkg.id %>/<%= it.id %>"><%- include('../partials/csrf') %><input type="hidden" name="op" value="up"><button class="icon-btn" type="submit" aria-label="<%= t('checklist.up') %>" title="<%= t('checklist.up') %>"<%= i === 0 ? ' disabled' : '' %>>↑</button></form>
+        <form method="post" action="/app/checklists/<%= pkg.id %>/<%= it.id %>"><%- include('../partials/csrf') %><input type="hidden" name="op" value="down"><button class="icon-btn" type="submit" aria-label="<%= t('checklist.down') %>" title="<%= t('checklist.down') %>"<%= i === items.length - 1 ? ' disabled' : '' %>>↓</button></form>
+        <form method="post" action="/app/checklists/<%= pkg.id %>/<%= it.id %>" data-confirm="<%= t('checklist.delete') %>?"><%- include('../partials/csrf') %><input type="hidden" name="op" value="delete"><button class="btn btn-sm btn-danger" type="submit"><%= t('checklist.delete') %></button></form>
+      </div>
+    <% }) %>
+  </div>
+  <form class="add-form" method="post" action="/app/checklists/<%= pkg.id %>"><%- include('../partials/csrf') %>
+    <div class="field-row">
+      <input type="text" name="label" placeholder="<%= t('checklist.labelEn') %>" required maxlength="80" aria-label="<%= t('checklist.labelEn') %>">
+      <input type="text" name="label_id" placeholder="<%= t('checklist.labelId') %>" maxlength="80" aria-label="<%= t('checklist.labelId') %>">
+    </div>
+    <button class="btn" type="submit"><%= t('checklist.add') %></button>
+  </form>
+</div>
+<%- include('../partials/app-end') %>

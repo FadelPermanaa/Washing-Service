@@ -1,0 +1,33 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div><h1><%= t('jobs.title') %></h1><div class="sub"><%= t('jobs.sub') %></div></div>
+</div>
+<div class="kpis">
+  <div class="kpi k-vanilla"><div class="label"><%= t('jobs.todayCount') %></div><div class="value mono"><%= jobs.stats.today_count %></div></div>
+  <div class="kpi k-sky"><div class="label"><%= t('jobs.todayCommission') %></div><div class="value mono"><%= rupiah(jobs.stats.today_commission) %></div></div>
+  <div class="kpi k-dark"><div class="label"><%= t('jobs.monthCommission') %></div><div class="value mono"><%= rupiah(jobs.stats.month_commission) %></div><div class="small"><%= t('jobs.monthCount', { n: jobs.stats.month_count }) %></div></div>
+</div>
+<div class="grid-2-even" data-autorefresh="45">
+  <section>
+    <h2 class="section-title"><%= t('jobs.active') %></h2>
+    <% if (!jobs.active.length) { %><div class="card empty"><%= t('jobs.none') %></div><% } %>
+    <% jobs.active.forEach((j) => { %>
+      <a class="card job-card" href="/app/jobs/<%= j.id %>">
+        <div class="card-head" style="margin-bottom:6px"><span class="plate plate-lg"><%= j.plate %></span><% if (j.bay_name) { %><span class="badge badge-washing"><%= j.bay_name %></span><% } %></div>
+        <div><strong><%= L(j, 'package_name') %></strong> · <%= L(j, 'vehicle_type_name') %></div>
+        <div class="small muted"><%= [j.brand_model, j.color].filter(Boolean).join(' · ') %><%= j.brand_model || j.color ? ' · ' : '' %><%= t('ticket.start') %> <%= time(j.started_at) %></div>
+      </a>
+    <% }) %>
+  </section>
+  <section>
+    <h2 class="section-title"><%= t('jobs.doneToday') %></h2>
+    <% if (!jobs.done.length) { %><div class="card empty">—</div><% } %>
+    <% jobs.done.forEach((j) => { %>
+      <div class="card">
+        <div class="card-head" style="margin-bottom:4px"><span class="plate"><%= j.plate %></span><strong class="mono"><%= rupiah(j.commission) %></strong></div>
+        <div class="small muted"><%= L(j, 'package_name') %> · <%= time(j.started_at) %>–<%= time(j.finished_at) %></div>
+      </div>
+    <% }) %>
+  </section>
+</div>
+<%- include('../partials/app-end') %>

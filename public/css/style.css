@@ -528,3 +528,43 @@ form.inline { display: inline-flex; gap: 6px; align-items: center; }
 .add-form .field-row { margin: 0; }
 .add-form > .btn { justify-self: start; }
 .bars { overflow-x: clip; overflow-y: visible; }
+
+/* Washer / bay assignment and checklist progress */
+.assign { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; font-weight: 600; color: var(--mocha); }
+.assign span { display: inline-flex; align-items: center; gap: 4px; }
+.progress { height: 6px; border-radius: 999px; background: var(--mocha-10); overflow: hidden; margin: 8px 0 2px; }
+.progress i { display: block; height: 100%; background: var(--ok); border-radius: 999px; }
+.start-form { flex-wrap: wrap; }
+.start-form select { max-width: 100%; }
+.checklist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.checklist form { margin: 0; }
+.check-btn {
+  width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; cursor: pointer;
+  background: var(--white); border: 1.5px solid var(--mocha-20); border-radius: 14px; padding: 14px 16px;
+  font: 600 15px/1.35 var(--font); color: var(--mocha); min-height: 56px;
+}
+.check-btn .box { flex: none; width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--mocha-20); display: grid; place-items: center; color: transparent; }
+.check-btn.done { background: var(--ok-bg); border-color: #B9DCC5; }
+.check-btn.done .box { background: var(--ok); border-color: var(--ok); color: var(--white); }
+.check-btn.done .label { text-decoration: line-through; text-decoration-color: rgba(47, 107, 79, .5); }
+.check-btn .who { display: block; font-weight: 500; font-size: 12px; color: var(--mocha-60); text-decoration: none; }
+.check-btn:disabled { cursor: default; opacity: .8; }
+.job-card { display: block; text-decoration: none; }
+.job-card:hover { box-shadow: var(--shadow); }
+.list-rows { display: flex; flex-direction: column; gap: 8px; }
+.list-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--mocha-10); border-radius: 14px; padding: 10px 12px; }
+.list-row .grow { flex: 1; min-width: 180px; }
+.icon-btn { background: none; border: 1px solid var(--mocha-20); border-radius: 10px; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer; color: var(--mocha); font: 600 16px var(--font); }
+.icon-btn:hover { background: var(--mocha-10); }
+.icon-btn:disabled { opacity: .3; cursor: default; }
+.section-title { font-size: 18px; margin: 0 0 12px; }
+section > .card + .card, section > a.card + .card, section > .card + a.card, section > a.card + a.card { margin-top: 10px; }
+tr.edit-row td { padding-top: 0; }
+tr.edit-row:hover { background: transparent !important; }
+table.data tr:has(+ tr.edit-row) td { border-bottom: 0; }
+.user-edit .field { margin-bottom: 10px; }
+@media (max-width: 600px) {
+  table.data.stack tr.edit-row { border: 0; background: none; padding: 0 4px; margin: -8px 0 14px; }
+  table.data.stack tr.edit-row td { display: block; text-align: left; border: 0; }
+  table.data.stack tr.edit-row td::before { display: none; }
+}

@@ -31,6 +31,34 @@ const DEFAULT_PACKAGES = [
   ['Interior Detailing', 'Deep interior clean with extractor & steam', [null, 350000, 400000, 475000, 550000]],
 ];
 
+// Default step-by-step checklist per package: [English, Indonesian].
+const EXTERIOR_STEPS = [
+  ['Pre-rinse body and wheels', 'Bilas awal bodi dan velg'],
+  ['Apply snow foam', 'Semprot snow foam'],
+  ['Clean wheels and tires', 'Bersihkan velg dan ban'],
+  ['Rinse off foam', 'Bilas busa sampai bersih'],
+  ['Dry with microfiber', 'Keringkan dengan lap microfiber'],
+  ['Clean outside glass', 'Bersihkan kaca luar'],
+];
+const INTERIOR_STEPS = [
+  ['Vacuum seats and carpets', 'Vakum jok dan karpet'],
+  ['Wipe dashboard and panels', 'Lap dasbor dan panel'],
+  ['Clean inside glass', 'Bersihkan kaca dalam'],
+];
+const DEFAULT_CHECKLISTS = {
+  'Exterior Wash': EXTERIOR_STEPS,
+  'Full Wash': [...EXTERIOR_STEPS, ...INTERIOR_STEPS],
+  'Premium Wash + Wax': [...EXTERIOR_STEPS, ...INTERIOR_STEPS, ['Apply body wax', 'Aplikasikan wax bodi'], ['Tire shine', 'Semir ban']],
+  'Interior Detailing': [
+    ['Remove loose items and floor mats', 'Keluarkan barang dan karpet dasar'],
+    ['Vacuum the whole cabin', 'Vakum seluruh kabin'],
+    ['Extractor on seats and carpets', 'Extractor pada jok dan karpet'],
+    ['Steam clean panels and vents', 'Steam panel dan kisi AC'],
+    ['Clean inside glass', 'Bersihkan kaca dalam'],
+    ['Final inspection', 'Pemeriksaan akhir'],
+  ],
+};
+
 const DEFAULT_ADDONS = [['Tire Shine', 10000], ['Engine Bay Wash', 35000], ['Underbody Wash', 30000], ['Cabin Fragrance', 10000], ['Body Wax', 40000]];
 
 function seed() {
@@ -54,6 +82,9 @@ function seed() {
       prices.forEach((price, j) => {
         if (price != null) db.prepare('INSERT INTO package_prices (package_id, vehicle_type_id, price) VALUES (?, ?, ?)').run(pid, typeIds[j], price);
       });
+      (DEFAULT_CHECKLISTS[name] || []).forEach(([en, idLabel], k) => {
+        db.prepare('INSERT INTO checklist_items (package_id, label, label_id, sort_order) VALUES (?, ?, ?, ?)').run(pid, en, idLabel, k);
+      });
     });
 
     for (const [name, price] of DEFAULT_ADDONS) {
@@ -62,4 +93,4 @@ function seed() {
   });
 }
 
-module.exports = { seed, DEFAULT_ID_NAMES };
+module.exports = { seed, DEFAULT_ID_NAMES, DEFAULT_CHECKLISTS };

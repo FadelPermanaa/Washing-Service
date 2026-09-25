@@ -44,4 +44,24 @@
     </tbody></table>
   </div>
 </div>
+<div class="card" style="margin-top:18px">
+  <h2><%= t('rep.byWasher') %></h2>
+  <div class="table-wrap">
+    <table class="data stack">
+      <thead><tr><th><%= t('work.washer') %></th><th class="num"><%= t('rep.cars') %></th><th class="num"><%= t('rep.avgTime') %></th><th class="num"><%= t('rep.revenue') %></th><th class="num"><%= t('work.commission') %></th></tr></thead>
+      <tbody>
+        <% if (!r.byWasher.length) { %><tr><td colspan="5" class="empty"><%= t('rep.noData') %></td></tr><% } %>
+        <% r.byWasher.forEach((w) => { %>
+          <tr>
+            <td data-label="<%= t('work.washer') %>"><strong><%= w.name %></strong></td>
+            <td data-label="<%= t('rep.cars') %>" class="num"><%= w.count %></td>
+            <td data-label="<%= t('rep.avgTime') %>" class="num"><%= w.avg_minutes != null ? t('rep.minutes', { n: w.avg_minutes }) : '—' %></td>
+            <td data-label="<%= t('rep.revenue') %>" class="num nowrap"><%= rupiah(w.revenue) %></td>
+            <td data-label="<%= t('work.commission') %>" class="num nowrap"><strong><%= rupiah(w.commission) %></strong></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
 <%- include('../partials/app-end') %>

@@ -33,8 +33,14 @@ function monthlyReport(month) {
     SELECT payment_method AS name, COUNT(*) AS count, SUM(total) AS revenue
     FROM transactions WHERE substr(created_at, 1, 7) = ? AND payment_status = 'paid'
     GROUP BY payment_method ORDER BY revenue DESC`).all(m);
+  const byWasher = db.prepare(`
+    SELECT u.id, u.name, COUNT(x.id) AS count, COALESCE(SUM(x.total), 0) AS revenue, COALESCE(SUM(x.commission), 0) AS commission,
+      CAST(ROUND(AVG((julianday(x.finished_at) - julianday(x.started_at)) * 1440)) AS INTEGER) AS avg_minutes
+    FROM transactions x JOIN users u ON u.id = x.washer_id
+    WHERE x.status = 'done' AND substr(x.finished_at, 1, 7) = ?
+    GROUP BY u.id ORDER BY count DESC`).all(m);
   const totals = byDay.reduce((acc, r) => ({ vehicles: acc.vehicles + r.vehicles, revenue: acc.revenue + r.revenue }), { vehicles: 0, revenue: 0 });
-  return { month: m, byDay, byPackage, byType, byMethod, totals };
+  return { month: m, byDay, byPackage, byType, byMethod, byWasher, totals };
 }
 
 module.exports = { dashboardStats, monthlyReport };

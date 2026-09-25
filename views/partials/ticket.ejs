@@ -1,3 +1,4 @@
+<%# Queue ticket. Locals: t (transaction), actions (default true), methods, washers, bays, progress %>
 <div class="ticket">
   <div class="ticket-top">
     <span class="plate"><%= t.plate %></span>
@@ -7,16 +8,32 @@
     <b><%= L(t, 'package_name') %></b> · <%= L(t, 'vehicle_type_name') %><br>
     <%= t.customer_name || tr('ticket.walkin') %><%= t.brand_model ? ' · ' + t.brand_model : '' %><br>
     <a class="row-link" href="/app/transactions/<%= t.id %>"><%= t.code %></a> · <%= tr('ticket.in') %> <%= time(t.created_at) %><% if (t.started_at) { %> · <%= tr('ticket.start') %> <%= time(t.started_at) %><% } %><% if (t.finished_at) { %> · <%= tr('ticket.done') %> <%= time(t.finished_at) %><% } %> · <b><%= rupiah(t.total) %></b>
+    <% if (t.washer_name || t.bay_name) { %>
+      <div class="assign"><% if (t.washer_name) { %><span><%- include('icon', { name: 'users', size: 14 }) %> <%= t.washer_name %></span><% } %><% if (t.bay_name) { %><span><%- include('icon', { name: 'drop', size: 14 }) %> <%= t.bay_name %></span><% } %></div>
+    <% } %>
+    <% const pr = locals.progress && progress[t.id]; if (pr && pr.total) { %>
+      <div class="progress" title="<%= tr('work.checklist') %>"><i style="width:<%= Math.round(pr.done / pr.total * 100) %>%"></i></div>
+      <span class="small"><%= tr('work.progress', { done: pr.done, total: pr.total }) %></span>
+    <% } %>
   </div>
   <% if (locals.actions !== false) { %>
   <div class="ticket-actions">
     <% if (t.status === 'waiting') { %>
-      <form method="post" action="/app/transactions/<%= t.id %><%- include('csrf') %>/status"><input type="hidden" name="action" value="start"><button class="btn btn-sm" type="submit"><%= tr('action.start') %></button></form>
+      <form class="start-form" method="post" action="/app/transactions/<%= t.id %>/status"><%- include('csrf') %>
+        <input type="hidden" name="action" value="start">
+        <% if (locals.washers && washers.length) { %>
+          <select name="washer_id" aria-label="<%= tr('work.washer') %>"><option value=""><%= tr('work.anyWasher') %></option><% washers.forEach((w) => { %><option value="<%= w.id %>"><%= w.name %></option><% }) %></select>
+        <% } %>
+        <% if (locals.bays && bays.length) { %>
+          <select name="bay_id" aria-label="<%= tr('work.bay') %>"><option value=""><%= tr('work.anyBay') %></option><% bays.forEach((b) => { %><option value="<%= b.id %>"<%= b.busy_tx ? ' disabled' : '' %>><%= b.name %><%= b.busy_tx ? ' · ' + tr('settings.inUse') : '' %></option><% }) %></select>
+        <% } %>
+        <button class="btn btn-sm" type="submit"><%= tr('action.start') %></button>
+      </form>
     <% } else if (t.status === 'washing') { %>
-      <form method="post" action="/app/transactions/<%= t.id %><%- include('csrf') %>/status"><input type="hidden" name="action" value="finish"><button class="btn btn-sm btn-sky" type="submit"><%= tr('action.finish') %></button></form>
+      <form method="post" action="/app/transactions/<%= t.id %>/status"><%- include('csrf') %><input type="hidden" name="action" value="finish"><button class="btn btn-sm btn-sky" type="submit"><%= tr('action.finish') %></button></form>
     <% } %>
     <% if (t.payment_status === 'unpaid') { %>
-      <form method="post" action="/app/transactions/<%= t.id %><%- include('csrf') %>/pay">
+      <form method="post" action="/app/transactions/<%= t.id %>/pay"><%- include('csrf') %>
         <select name="method" aria-label="<%= tr('field.paymentMethod') %>"><% methods.forEach((m) => { %><option value="<%= m %>"><%= tr('method.' + m) %></option><% }) %></select>
         <button class="btn btn-sm btn-vanilla" type="submit"><%= tr('action.pay') %></button>
       </form>

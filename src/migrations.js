@@ -1,7 +1,7 @@
 // Versioned schema migrations. The applied version is stored in SQLite's `PRAGMA user_version`.
 // Append new migrations to the end of the list; never edit one that has shipped.
 const { db, tx, hasColumn } = require('./db');
-const { DEFAULT_ID_NAMES } = require('./defaults');
+const { DEFAULT_ID_NAMES, DEFAULT_CHECKLISTS } = require('./defaults');
 
 const migrations = [
   // 1 — base schema (the "simple" version). IF NOT EXISTS keeps it safe on databases created before versioning.
@@ -114,6 +114,66 @@ const migrations = [
     db.exec(`UPDATE transaction_addons SET
       name_id = (SELECT name_id FROM addons a WHERE a.id = transaction_addons.addon_id AND a.name = transaction_addons.name)
       WHERE name_id IS NULL`);
+  },
+
+  // 3 — washers, bays, per-package checklists, commission.
+  () => {
+    // SQLite can't change a CHECK constraint in place, so rebuild `users` to allow the washer role.
+    db.exec(`
+      CREATE TABLE users_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('admin', 'cashier', 'washer')),
+        phone TEXT,
+        commission_type TEXT NOT NULL DEFAULT 'fixed' CHECK (commission_type IN ('fixed', 'percent')),
+        commission_value INTEGER NOT NULL DEFAULT 0 CHECK (commission_value >= 0),
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL
+      );
+      INSERT INTO users_new (id, name, username, password_hash, role, active, created_at)
+        SELECT id, name, username, password_hash, role, active, created_at FROM users;
+      DROP TABLE users;
+      ALTER TABLE users_new RENAME TO users;
+
+      CREATE TABLE bays (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1
+      );
+      INSERT INTO bays (name, sort_order) VALUES ('Bay 1', 1), ('Bay 2', 2);
+
+      CREATE TABLE checklist_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+        label TEXT NOT NULL,
+        label_id TEXT,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      );
+
+      ALTER TABLE transactions ADD COLUMN washer_id INTEGER REFERENCES users(id);
+      ALTER TABLE transactions ADD COLUMN bay_id INTEGER REFERENCES bays(id);
+      ALTER TABLE transactions ADD COLUMN commission INTEGER NOT NULL DEFAULT 0;
+      CREATE INDEX idx_tx_washer ON transactions(washer_id);
+
+      CREATE TABLE transaction_checks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+        label TEXT NOT NULL,
+        label_id TEXT,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        done_at TEXT,
+        done_by INTEGER REFERENCES users(id)
+      );
+      CREATE INDEX idx_checks_tx ON transaction_checks(transaction_id);
+    `);
+    const insert = db.prepare('INSERT INTO checklist_items (package_id, label, label_id, sort_order) VALUES (?, ?, ?, ?)');
+    for (const [pkgName, items] of Object.entries(DEFAULT_CHECKLISTS)) {
+      const pkg = db.prepare('SELECT id FROM packages WHERE name = ?').get(pkgName);
+      if (pkg) items.forEach(([en, idLabel], i) => insert.run(pkg.id, en, idLabel, i));
+    }
   },
 ];
 

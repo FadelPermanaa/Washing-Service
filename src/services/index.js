@@ -4,4 +4,5 @@ module.exports = {
   ...require('./vehicles'),
   ...require('./transactions'),
   ...require('./reports'),
+  ...require('./work'),
 };

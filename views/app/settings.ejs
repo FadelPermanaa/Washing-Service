@@ -1,0 +1,27 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div><h1><%= t('settings.title') %></h1><div class="sub"><%= t('settings.sub') %></div></div>
+</div>
+<div class="grid-2-even">
+  <section class="card" id="bays">
+    <h2><%= t('settings.bays') %></h2>
+    <p class="small muted"><%= t('settings.baysHint') %></p>
+    <div class="list-rows">
+      <% bays.forEach((b) => { %>
+        <div class="list-row<%= b.active ? '' : ' inactive' %>">
+          <form class="inline grow" method="post" action="/app/bays/<%= b.id %>"><%- include('../partials/csrf') %>
+            <input type="text" name="name" value="<%= b.name %>" required maxlength="40" aria-label="<%= t('settings.bayName') %>">
+            <button class="btn btn-sm" type="submit"><%= t('prices.saveOne') %></button>
+          </form>
+          <% if (b.busy_tx) { %><span class="badge badge-washing"><%= t('settings.inUse') %></span><% } %>
+          <form method="post" action="/app/bays/<%= b.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= b.active ? t('prices.hide') : t('prices.show') %></button></form>
+        </div>
+      <% }) %>
+    </div>
+    <form class="filters" method="post" action="/app/bays" style="margin:14px 0 0"><%- include('../partials/csrf') %>
+      <input type="text" name="name" placeholder="<%= t('settings.bayName') %>" required maxlength="40" aria-label="<%= t('settings.bayName') %>" style="flex:1">
+      <button class="btn" type="submit"><%= t('prices.add') %></button>
+    </form>
+  </section>
+</div>
+<%- include('../partials/app-end') %>

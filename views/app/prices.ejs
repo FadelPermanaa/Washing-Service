@@ -56,6 +56,7 @@
             <div><strong><%= p.name %></strong><% if (p.name_id) { %><div class="small muted"><%= p.name_id %></div><% } %></div>
             <form method="post" action="/app/catalog/packages/<%= p.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= p.active ? t('prices.hide') : t('prices.show') %></button></form>
           </div>
+          <a class="small" href="/app/checklists/<%= p.id %>"><%= t('prices.checklist', { n: checklistCounts[p.id] || 0 }) %> →</a>
           <%- include('../partials/names-form', { kind: 'packages', item: p, withDescription: true }) %>
         </div>
       <% }) %>

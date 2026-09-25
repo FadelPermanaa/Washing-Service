@@ -1,0 +1,19 @@
+<%# Checklist on a job. Locals: tx (with checks), back ('detail' | 'job') %>
+<% if (!tx.checks.length) { %>
+  <p class="muted"><%= tr('work.noChecklist') %></p>
+<% } else { const editable = tx.status === 'washing'; %>
+  <% if (editable) { %><p class="small muted"><%= tr('work.checklistHint') %></p><% } %>
+  <ul class="checklist">
+    <% tx.checks.forEach((c) => { %>
+      <li>
+        <form method="post" action="/app/jobs/<%= tx.id %>/checks/<%= c.id %>" data-check><%- include('csrf') %>
+          <input type="hidden" name="back" value="<%= back %>">
+          <button class="check-btn<%= c.done_at ? ' done' : '' %>" type="submit" aria-pressed="<%= c.done_at ? 'true' : 'false' %>"<%= editable ? '' : ' disabled' %>>
+            <span class="box" aria-hidden="true">✓</span>
+            <span><span class="label"><%= L(c, 'label') %></span><% if (c.done_at) { %><span class="who"><%= tr('work.doneBy', { name: c.done_by_name || '—', time: time(c.done_at) }) %></span><% } %></span>
+          </button>
+        </form>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>

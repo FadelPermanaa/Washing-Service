@@ -6,11 +6,20 @@ const { flash, action } = require('./util');
 
 const router = express.Router();
 const { UserError, toInt, clean } = svc;
+const ROLES = ['admin', 'cashier', 'washer'];
+
+function commissionInput(body) {
+  const type = body.commission_type === 'percent' ? 'percent' : 'fixed';
+  let value = Math.max(0, toInt(body.commission_value));
+  if (type === 'percent' && value > 100) throw new UserError('err.percentRange');
+  return { type, value };
+}
 
 // ---------- Price list ----------
 
 router.get('/prices', (req, res) => {
-  res.render('app/prices', { title: req.t('prices.title'), priceList: svc.getPriceList({ includeInactive: true }) });
+  const checklistCounts = Object.fromEntries(db.prepare('SELECT package_id, COUNT(*) AS n FROM checklist_items GROUP BY package_id').all().map((r) => [r.package_id, r.n]));
+  res.render('app/prices', { title: req.t('prices.title'), priceList: svc.getPriceList({ includeInactive: true }), checklistCounts });
 });
 
 router.post('/prices', action((req, res) => {
@@ -90,7 +99,8 @@ router.post('/catalog/addons/:id/price', action((req, res) => {
 // ---------- Staff accounts ----------
 
 router.get('/users', (req, res) => {
-  const users = db.prepare('SELECT id, name, username, role, active, created_at FROM users ORDER BY id').all();
+  const users = db.prepare(`SELECT id, name, username, role, phone, commission_type, commission_value, active, created_at
+    FROM users ORDER BY active DESC, role, name`).all();
   res.render('app/users', { title: req.t('users.title'), users });
 });
 
@@ -98,13 +108,27 @@ router.post('/users', action((req, res) => {
   const name = clean(req.body.name, 60);
   const username = String(req.body.username || '').trim().toLowerCase();
   const password = String(req.body.password || '');
-  const role = ['admin', 'cashier'].includes(req.body.role) ? req.body.role : 'cashier';
+  const role = ROLES.includes(req.body.role) ? req.body.role : 'cashier';
   if (!name || !/^[a-z0-9._-]{3,30}$/.test(username)) throw new UserError('err.userInvalid');
   if (password.length < 6) throw new UserError('err.passwordShort');
   if (db.prepare('SELECT 1 FROM users WHERE username = ?').get(username)) throw new UserError('err.usernameTaken');
-  db.prepare('INSERT INTO users (name, username, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)')
-    .run(name, username, hashPassword(password), role, now());
+  const { type, value } = commissionInput(req.body);
+  db.prepare(`INSERT INTO users (name, username, password_hash, role, phone, commission_type, commission_value, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(name, username, hashPassword(password), role, svc.normalizePhone(req.body.phone) || null, type, value, now());
   flash(req, 'success', 'flash.userCreated', { u: username });
+  res.redirect('/app/users');
+}, '/app/users'));
+
+router.post('/users/:id/profile', action((req, res) => {
+  const id = toInt(req.params.id);
+  const name = clean(req.body.name, 60);
+  if (!name) throw new UserError('err.nameRequired');
+  const role = ROLES.includes(req.body.role) ? req.body.role : 'cashier';
+  if (id === req.session.user.id && role !== 'admin') throw new UserError('err.selfDemote');
+  const { type, value } = commissionInput(req.body);
+  db.prepare('UPDATE users SET name = ?, role = ?, phone = ?, commission_type = ?, commission_value = ? WHERE id = ?')
+    .run(name, role, svc.normalizePhone(req.body.phone) || null, type, value, id);
+  flash(req, 'success', 'flash.saved');
   res.redirect('/app/users');
 }, '/app/users'));
 
@@ -122,5 +146,63 @@ router.post('/users/:id/password', action((req, res) => {
   flash(req, 'success', 'flash.passwordUpdated');
   res.redirect('/app/users');
 }, '/app/users'));
+
+// ---------- Settings: wash bays ----------
+
+router.get('/settings', (req, res) => {
+  res.render('app/settings', { title: req.t('settings.title'), bays: svc.listBays({ activeOnly: false }) });
+});
+
+router.post('/bays', action((req, res) => {
+  const name = clean(req.body.name, 40);
+  if (!name) throw new UserError('err.nameRequired');
+  if (db.prepare('SELECT 1 FROM bays WHERE name = ?').get(name)) throw new UserError('err.exists', { name });
+  const order = db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM bays').get().n;
+  db.prepare('INSERT INTO bays (name, sort_order) VALUES (?, ?)').run(name, order);
+  flash(req, 'success', 'flash.saved');
+  res.redirect('/app/settings#bays');
+}, '/app/settings'));
+
+router.post('/bays/:id', action((req, res) => {
+  const id = toInt(req.params.id);
+  const name = clean(req.body.name, 40);
+  if (!name) throw new UserError('err.nameRequired');
+  if (db.prepare('SELECT 1 FROM bays WHERE name = ? AND id != ?').get(name, id)) throw new UserError('err.exists', { name });
+  db.prepare('UPDATE bays SET name = ? WHERE id = ?').run(name, id);
+  flash(req, 'success', 'flash.saved');
+  res.redirect('/app/settings#bays');
+}, '/app/settings'));
+
+router.post('/bays/:id/toggle', action((req, res) => {
+  const id = toInt(req.params.id);
+  const busy = db.prepare("SELECT 1 FROM transactions WHERE bay_id = ? AND status = 'washing'").get(id);
+  const bay = db.prepare('SELECT * FROM bays WHERE id = ?').get(id);
+  if (bay?.active && busy) throw new UserError('err.bayInUse');
+  db.prepare('UPDATE bays SET active = 1 - active WHERE id = ?').run(id);
+  res.redirect('/app/settings#bays');
+}, '/app/settings'));
+
+// ---------- Checklists per package ----------
+
+router.get('/checklists/:packageId', (req, res) => {
+  const pkg = db.prepare('SELECT * FROM packages WHERE id = ?').get(toInt(req.params.packageId));
+  if (!pkg) return res.redirect('/app/prices');
+  res.render('app/checklist', { title: req.t('checklist.title'), pkg, items: svc.packageChecklist(pkg.id) });
+});
+
+router.post('/checklists/:packageId', action((req, res) => {
+  const pid = toInt(req.params.packageId);
+  svc.addChecklistItem(pid, { label: req.body.label, labelId: req.body.label_id });
+  res.redirect(`/app/checklists/${pid}`);
+}, '/app/prices'));
+
+router.post('/checklists/:packageId/:itemId', action((req, res) => {
+  const pid = toInt(req.params.packageId);
+  const itemId = toInt(req.params.itemId);
+  if (req.body.op === 'delete') svc.deleteChecklistItem(pid, itemId);
+  else if (req.body.op === 'up' || req.body.op === 'down') svc.moveChecklistItem(pid, itemId, req.body.op === 'up' ? -1 : 1);
+  else svc.updateChecklistItem(pid, itemId, { label: req.body.label, labelId: req.body.label_id });
+  res.redirect(`/app/checklists/${pid}`);
+}, '/app/prices'));
 
 module.exports = router;

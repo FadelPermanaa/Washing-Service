@@ -12,6 +12,15 @@ if (count > 0 && !process.argv.includes('--force')) {
 
 const { types, packages, addons, prices } = svc.getPriceList();
 const admin = db.prepare("SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1").get();
+const { hashPassword } = require('./auth');
+if (!db.prepare("SELECT 1 FROM users WHERE role = 'washer'").get()) {
+  [['Joko Susilo', 'joko', 'fixed', 8000], ['Rina Wati', 'rina', 'fixed', 8000], ['Dimas Pratama', 'dimas', 'percent', 10]].forEach(([name, username, type, value]) => {
+    db.prepare(`INSERT INTO users (name, username, password_hash, role, commission_type, commission_value, created_at)
+      VALUES (?, ?, ?, 'washer', ?, ?, ?)`).run(name, username, hashPassword('washer123'), type, value, now());
+  });
+}
+const washers = db.prepare("SELECT * FROM users WHERE role = 'washer' AND active = 1").all();
+const bays = db.prepare('SELECT id FROM bays WHERE active = 1').all();
 const names = ['Budi Santoso', 'Siti Rahma', 'Andi Wijaya', 'Dewi Lestari', 'Rizky Pratama', 'Putri Anggraini', 'Agus Salim', 'Maya Sari', null, null];
 const models = { Motorcycle: ['Honda Vario', 'Yamaha NMAX', 'Honda Beat'], default: ['Toyota Avanza', 'Honda Brio', 'Mitsubishi Xpander', 'Toyota Fortuner', 'Suzuki Ertiga', 'Honda HR-V'] };
 const regions = ['B', 'D', 'F', 'AB', 'L', 'N'];
@@ -48,9 +57,18 @@ tx(() => {
       const end = new Date(start.getTime() + (20 + Math.floor(Math.random() * 30)) * 60 * 1000);
       let status = 'done';
       if (back === 0) status = ['done', 'done', 'washing', 'waiting', 'waiting'][i] || 'waiting';
-      db.prepare(`UPDATE transactions SET created_at = ?, started_at = ?, finished_at = ?, status = ?,
+      const washer = status === 'waiting' ? null : pick(washers);
+      const bay = status === 'washing' ? bays[i % bays.length] : (status === 'done' ? pick(bays) : null);
+      const total = db.prepare('SELECT total FROM transactions WHERE id = ?').get(id).total;
+      db.prepare(`UPDATE transactions SET created_at = ?, started_at = ?, finished_at = ?, status = ?, washer_id = ?, bay_id = ?, commission = ?,
           paid_at = CASE WHEN payment_status = 'paid' THEN ? END WHERE id = ?`)
-        .run(now(d), status === 'waiting' ? null : now(start), status === 'done' ? now(end) : null, status, now(end), id);
+        .run(now(d), status === 'waiting' ? null : now(start), status === 'done' ? now(end) : null, status,
+          washer?.id ?? null, bay?.id ?? null, status === 'done' ? svc.commissionFor(washer, total) : 0, now(end), id);
+      if (status === 'washing') {
+        const items = svc.packageChecklist(pkg.id);
+        items.forEach((it, k) => db.prepare('INSERT INTO transaction_checks (transaction_id, label, label_id, sort_order, done_at, done_by) VALUES (?, ?, ?, ?, ?, ?)')
+          .run(id, it.label, it.label_id, it.sort_order, k < items.length / 2 ? now(start) : null, k < items.length / 2 ? washer.id : null));
+      }
       created++;
     }
   }

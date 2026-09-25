@@ -15,7 +15,12 @@ router.get('/', (req, res) => {
 });
 
 router.get('/queue', (req, res) => {
-  res.render('app/queue', { title: req.t('queue.title'), queue: svc.queue(), methods: svc.PAYMENT_METHODS });
+  const queue = svc.queue();
+  const ids = [...queue.washing, ...queue.done].map((r) => r.id);
+  res.render('app/queue', {
+    title: req.t('queue.title'), queue, methods: svc.PAYMENT_METHODS,
+    washers: svc.listWashers(), bays: svc.listBays(), progress: svc.checkProgress(ids),
+  });
 });
 
 router.get('/transactions/new', (req, res) => {
@@ -49,11 +54,14 @@ router.get('/transactions', (req, res) => {
 router.get('/transactions/:id', (req, res) => {
   const t = svc.getTransaction(svc.toInt(req.params.id));
   if (!t) return notFound(req, res, 'err.txNotFound');
-  res.render('app/transaction', { title: t.code, tx: t, methods: svc.PAYMENT_METHODS, autoPrint: req.query.print === '1' });
+  res.render('app/transaction', {
+    title: t.code, tx: t, methods: svc.PAYMENT_METHODS, autoPrint: req.query.print === '1',
+    washers: svc.listWashers(), bays: svc.listBays(),
+  });
 });
 
 router.post('/transactions/:id/status', action((req, res) => {
-  svc.changeStatus(svc.toInt(req.params.id), String(req.body.action));
+  svc.changeStatus(svc.toInt(req.params.id), String(req.body.action), { washerId: req.body.washer_id, bayId: req.body.bay_id });
   flash(req, 'success', `flash.${req.body.action}`);
   res.redirect(req.body.back === 'detail' ? `/app/transactions/${req.params.id}` : '/app/queue');
 }, '/app/queue'));

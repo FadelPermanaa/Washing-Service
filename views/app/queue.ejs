@@ -8,7 +8,7 @@
     <section class="lane l-<%= key %>" aria-label="<%= label %>">
       <div class="lane-head"><span><%= label %></span><span class="count"><%= queue[key].length %></span></div>
       <% if (!queue[key].length) { %><div class="empty"><%= t('queue.empty') %></div><% } %>
-      <% queue[key].forEach((r) => { %><%- include('../partials/ticket', { t: r, methods }) %><% }) %>
+      <% queue[key].forEach((r) => { %><%- include('../partials/ticket', { t: r, methods, washers, bays, progress }) %><% }) %>
     </section>
   <% }) %>
 </div>

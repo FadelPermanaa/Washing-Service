@@ -35,6 +35,36 @@
     f.addEventListener('submit', (e) => { if (!confirm(f.dataset.confirm)) e.preventDefault(); });
   });
 
+  // Finishing a job with unticked steps asks first.
+  document.querySelectorAll('form[data-confirm-open]').forEach((f) => {
+    f.addEventListener('submit', (e) => {
+      const open = document.querySelectorAll('.check-btn:not(.done)').length;
+      if (open && !confirm(f.dataset.confirmOpen)) e.preventDefault();
+    });
+  });
+
+  // Checklist: tick steps without reloading the page (falls back to a normal form post).
+  document.querySelectorAll('form[data-check]').forEach((f) => {
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = f.querySelector('button');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      try {
+        const res = await fetch(f.action, { method: 'POST', body: new URLSearchParams(new FormData(f)), headers: { Accept: 'application/json' } });
+        if (!res.ok || !(res.headers.get('content-type') || '').includes('json')) throw new Error('fallback');
+        const { done } = await res.json();
+        btn.classList.toggle('done', done);
+        btn.setAttribute('aria-pressed', String(done));
+        const who = btn.querySelector('.who');
+        if (who && !done) who.remove();
+        btn.disabled = false;
+      } catch {
+        f.submit();
+      }
+    });
+  });
+
   // ---------- New transaction form ----------
   const form = document.getElementById('tx-form');
   if (!form) return;

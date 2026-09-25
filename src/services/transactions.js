@@ -2,6 +2,7 @@ const { db, now, today, tx } = require('../db');
 const { UserError, normalizePlate, toInt, clean, PAYMENT_METHODS } = require('./common');
 const { packagePrice, activeAddons } = require('./catalog');
 const { upsertVehicle } = require('./vehicles');
+const work = require('./work');
 
 /** Price breakdown for a new transaction. */
 function quote({ vehicleTypeId, packageId, addonIds = [], discount = 0 }) {
@@ -59,16 +60,19 @@ function createTransaction(input, userId) {
 }
 
 const TX_SELECT = `
-  SELECT x.*, v.plate, v.brand_model, v.color, c.name AS customer_name, c.phone AS customer_phone, u.name AS cashier_name
+  SELECT x.*, v.plate, v.brand_model, v.color, c.name AS customer_name, c.phone AS customer_phone, u.name AS cashier_name,
+    w.name AS washer_name, b.name AS bay_name
   FROM transactions x
   JOIN vehicles v ON v.id = x.vehicle_id
   LEFT JOIN customers c ON c.id = x.customer_id
-  LEFT JOIN users u ON u.id = x.created_by`;
+  LEFT JOIN users u ON u.id = x.created_by
+  LEFT JOIN users w ON w.id = x.washer_id
+  LEFT JOIN bays b ON b.id = x.bay_id`;
 
 function getTransaction(id) {
   const t = db.prepare(`${TX_SELECT} WHERE x.id = ?`).get(id);
   if (!t) return null;
-  return { ...t, addons: db.prepare('SELECT * FROM transaction_addons WHERE transaction_id = ?').all(id) };
+  return { ...t, addons: db.prepare('SELECT * FROM transaction_addons WHERE transaction_id = ?').all(id), checks: work.getChecks(id) };
 }
 
 function listTransactions({ date, status, q } = {}) {
@@ -97,22 +101,20 @@ function queue() {
   };
 }
 
-const TRANSITIONS = {
-  start: { from: ['waiting'], to: 'washing', stamp: 'started_at' },
-  finish: { from: ['washing'], to: 'done', stamp: 'finished_at' },
-  cancel: { from: ['waiting', 'washing'], to: 'cancelled', stamp: null },
-};
-
-function changeStatus(id, action) {
-  const rule = TRANSITIONS[action];
-  if (!rule) throw new UserError('err.unknownAction');
+function cancelTransaction(id) {
   const t = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
   if (!t) throw new UserError('err.txNotFound');
-  if (!rule.from.includes(t.status)) throw new UserError('err.badTransition', { status: { key: `status.${t.status}` } });
-  if (action === 'cancel' && t.payment_status === 'paid') throw new UserError('err.paidCancel');
-  const stamp = rule.stamp ? `, ${rule.stamp} = ?` : '';
-  const params = rule.stamp ? [rule.to, now(), id] : [rule.to, id];
-  db.prepare(`UPDATE transactions SET status = ?${stamp} WHERE id = ?`).run(...params);
+  if (!['waiting', 'washing'].includes(t.status)) throw new UserError('err.badTransition', { status: { key: `status.${t.status}` } });
+  if (t.payment_status === 'paid') throw new UserError('err.paidCancel');
+  db.prepare("UPDATE transactions SET status = 'cancelled' WHERE id = ?").run(id);
+}
+
+/** Move a transaction through the queue: start (optionally with washer + bay), finish, or cancel. */
+function changeStatus(id, action, opts = {}) {
+  if (action === 'start') return work.startWash(id, opts);
+  if (action === 'finish') return work.finishWash(id);
+  if (action === 'cancel') return cancelTransaction(id);
+  throw new UserError('err.unknownAction');
 }
 
 function markPaid(id, method) {

@@ -20,16 +20,28 @@
         <dt><%= t('detail.vehicle') %></dt><dd><%= L(tx, 'vehicle_type_name') %><%= tx.brand_model ? ' · ' + tx.brand_model : '' %><%= tx.color ? ' · ' + tx.color : '' %></dd>
         <dt><%= t('detail.customer') %></dt><dd><%= tx.customer_name || t('ticket.walkin') %><%= tx.customer_phone ? ' · ' + tx.customer_phone : '' %></dd>
         <dt><%= t('detail.created') %></dt><dd><%= tx.created_at %> <%= t('detail.by') %> <%= tx.cashier_name || '—' %></dd>
+        <% if (tx.washer_name) { %><dt><%= t('work.washer') %></dt><dd><%= tx.washer_name %><%= tx.status === 'done' ? ' · ' + t('work.commission') + ' ' + rupiah(tx.commission) : '' %></dd><% } %>
+        <% if (tx.bay_name) { %><dt><%= t('work.bay') %></dt><dd><%= tx.bay_name %></dd><% } %>
         <dt><%= t('detail.payment') %></dt><dd><%= tx.payment_status === 'paid' ? `${t('method.' + tx.payment_method)} · ${tx.paid_at}` : t('detail.notPaid') %></dd>
         <% if (tx.notes) { %><dt><%= t('detail.notes') %></dt><dd><%= tx.notes %></dd><% } %>
       </dl>
     </div>
+    <% if (tx.checks.length) { %>
+    <div class="card">
+      <h2><%= t('work.checklist') %></h2>
+      <%- include('../partials/checklist-list', { tx, back: 'detail' }) %>
+    </div>
+    <% } %>
     <% if (tx.status !== 'cancelled') { %>
     <div class="card">
       <h2><%= t('detail.actions') %></h2>
       <div class="ticket-actions">
         <% if (tx.status === 'waiting') { %>
-          <form method="post" action="/app/transactions/<%= tx.id %>/status"><%- include('../partials/csrf') %><input type="hidden" name="action" value="start"><input type="hidden" name="back" value="detail"><button class="btn" type="submit"><%= t('action.start') %></button></form>
+          <form class="start-form" method="post" action="/app/transactions/<%= tx.id %>/status"><%- include('../partials/csrf') %><input type="hidden" name="action" value="start"><input type="hidden" name="back" value="detail">
+            <% if (washers.length) { %><select name="washer_id" aria-label="<%= t('work.washer') %>"><option value=""><%= t('work.anyWasher') %></option><% washers.forEach((w) => { %><option value="<%= w.id %>"><%= w.name %></option><% }) %></select><% } %>
+            <% if (bays.length) { %><select name="bay_id" aria-label="<%= t('work.bay') %>"><option value=""><%= t('work.anyBay') %></option><% bays.forEach((b) => { %><option value="<%= b.id %>"<%= b.busy_tx ? ' disabled' : '' %>><%= b.name %><%= b.busy_tx ? ' · ' + t('settings.inUse') : '' %></option><% }) %></select><% } %>
+            <button class="btn" type="submit"><%= t('action.start') %></button>
+          </form>
         <% } else if (tx.status === 'washing') { %>
           <form method="post" action="/app/transactions/<%= tx.id %>/status"><%- include('../partials/csrf') %><input type="hidden" name="action" value="finish"><input type="hidden" name="back" value="detail"><button class="btn btn-sky" type="submit"><%= t('action.finish') %></button></form>
         <% } %>

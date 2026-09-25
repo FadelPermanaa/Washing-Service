@@ -50,7 +50,11 @@ app.use('/', require('./routes/public'));
 
 const staff = express.Router();
 staff.use(requireLogin);
-staff.use(['/prices', '/catalog', '/users'], requireAdmin);
+// Washers land on their own job list.
+staff.get('/', (req, res, next) => (req.session.user.role === 'washer' ? res.redirect('/app/jobs') : next()));
+staff.use('/jobs', requireRole('washer', 'cashier'));
+staff.use(require('./routes/jobs'));
+staff.use(['/prices', '/catalog', '/users', '/settings', '/checklists', '/bays'], requireAdmin);
 staff.use(require('./routes/admin'));
 staff.use(requireRole('cashier'), require('./routes/staff'));
 app.use('/app', staff);
