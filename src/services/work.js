@@ -58,6 +58,7 @@ function finishWash(id) {
     const washer = t.washer_id ? db.prepare('SELECT * FROM users WHERE id = ?').get(t.washer_id) : null;
     db.prepare("UPDATE transactions SET status = 'done', finished_at = ?, commission = ? WHERE id = ?")
       .run(now(), commissionFor(washer, t.total), id);
+    require('./notifications').notifyTransaction('tx_ready', id);
   });
 }
 

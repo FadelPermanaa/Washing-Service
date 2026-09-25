@@ -152,7 +152,9 @@ router.post('/users/:id/password', action((req, res) => {
 // ---------- Settings: wash bays ----------
 
 router.get('/settings', (req, res) => {
-  res.render('app/settings', { title: req.t('settings.title'), bays: svc.listBays({ activeOnly: false }), s: settings.all() });
+  res.render('app/settings', {
+    title: req.t('settings.title'), bays: svc.listBays({ activeOnly: false }), s: settings.all(), gateway: svc.notifications.hasGateway(),
+  });
 });
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -175,7 +177,15 @@ router.post('/settings/booking', action((req, res) => {
 }, '/app/settings'));
 
 router.post('/settings/business', action((req, res) => {
-  settings.set({ business_phone: svc.normalizePhone(req.body.business_phone), business_address: clean(req.body.business_address, 200) || '' });
+  const publicUrl = String(req.body.public_url || '').trim().replace(/\/$/, '');
+  if (publicUrl && !/^https?:\/\/[^\s/]+(\/[^\s]*)?$/.test(publicUrl)) throw new UserError('err.url');
+  settings.set({
+    business_phone: svc.normalizePhone(req.body.business_phone),
+    business_address: clean(req.body.business_address, 200) || '',
+    whatsapp_enabled: req.body.whatsapp_enabled === '1' ? '1' : '0',
+    message_lang: req.body.message_lang === 'en' ? 'en' : 'id',
+    public_url: publicUrl,
+  });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/settings#business');
 }, '/app/settings'));

@@ -6,4 +6,5 @@ module.exports = {
   ...require('./reports'),
   ...require('./work'),
   ...require('./bookings'),
+  notifications: require('./notifications'),
 };

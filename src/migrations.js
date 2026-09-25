@@ -216,6 +216,27 @@ const migrations = [
       db.prepare('UPDATE packages SET duration_min = ? WHERE name = ?').run(minutes, name);
     }
   },
+
+  // 5 — WhatsApp message outbox.
+  () => db.exec(`
+    CREATE TABLE notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      kind TEXT NOT NULL,
+      transaction_id INTEGER REFERENCES transactions(id),
+      booking_id INTEGER REFERENCES bookings(id),
+      phone TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'sent', 'failed', 'manual', 'done')),
+      error TEXT,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      sent_at TEXT,
+      handled_by INTEGER REFERENCES users(id)
+    );
+    CREATE UNIQUE INDEX idx_notif_once_tx ON notifications(kind, transaction_id) WHERE transaction_id IS NOT NULL;
+    CREATE UNIQUE INDEX idx_notif_once_booking ON notifications(kind, booking_id) WHERE booking_id IS NOT NULL;
+    CREATE INDEX idx_notif_status ON notifications(status);
+  `),
 ];
 
 function currentVersion() {

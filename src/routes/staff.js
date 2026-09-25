@@ -57,7 +57,7 @@ router.get('/transactions/:id', (req, res) => {
   if (!t) return notFound(req, res, 'err.txNotFound');
   res.render('app/transaction', {
     title: t.code, tx: t, methods: svc.PAYMENT_METHODS, autoPrint: req.query.print === '1',
-    washers: svc.listWashers(), bays: svc.listBays(),
+    washers: svc.listWashers(), bays: svc.listBays(), messages: svc.notifications.forTransaction(t.id),
   });
 });
 
@@ -100,5 +100,22 @@ router.post('/bookings/:id', action((req, res) => {
   flash(req, 'success', `flash.booking.${req.body.op}`);
   res.redirect(req.body.back === 'dashboard' ? '/app' : `/app/bookings?date=${b.date}`);
 }, '/app/bookings'));
+
+// ---------- WhatsApp outbox ----------
+
+router.get('/whatsapp', (req, res) => {
+  const status = req.query.all === '1' ? '' : 'open';
+  res.render('app/whatsapp', {
+    title: req.t('wa.title'), rows: svc.notifications.outbox({ status }), showAll: !status, gateway: svc.notifications.hasGateway(),
+  });
+});
+
+router.post('/whatsapp/:id', action((req, res) => {
+  const id = svc.toInt(req.params.id);
+  if (req.body.op === 'retry') svc.notifications.retry(id);
+  else svc.notifications.markHandled(id, req.session.user.id);
+  if (req.get('accept')?.includes('application/json')) return res.json({ ok: true });
+  res.redirect(req.body.back || '/app/whatsapp');
+}, '/app/whatsapp'));
 
 module.exports = router;

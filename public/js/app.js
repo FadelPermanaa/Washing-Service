@@ -67,6 +67,22 @@
     });
   });
 
+  // "Send via WhatsApp": open WhatsApp and mark the message as handled.
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+  document.querySelectorAll('a[data-mark]').forEach((a) => {
+    a.addEventListener('click', () => {
+      fetch(a.dataset.mark, { method: 'POST', headers: { Accept: 'application/json', 'x-csrf-token': csrfToken || '' } })
+        .then((r) => {
+          if (!r.ok) return;
+          const row = a.closest('[data-wa-row]');
+          row?.classList.add('wa-done');
+          const badge = row?.querySelector('[data-wa-status]');
+          if (badge) badge.textContent = '✓';
+        })
+        .catch(() => {});
+    });
+  });
+
   // Copy-to-clipboard buttons
   document.querySelectorAll('[data-copy]').forEach((btn) => {
     btn.addEventListener('click', async () => {

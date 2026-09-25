@@ -1,0 +1,20 @@
+<%# One outbox message. Locals: n, back %>
+<div class="wa-msg wa-<%= n.status %>" data-wa-row>
+  <div class="wa-head">
+    <span class="badge wa-badge-<%= n.status %>" data-wa-status><%= t('wa.status.' + n.status) %></span>
+    <strong><%= t('wa.kind.' + n.kind) %></strong>
+    <span class="small muted">+<%= n.phone %> · <%= n.created_at.slice(0, 16) %><%= n.tx_code ? ' · ' + n.tx_code : '' %><%= n.booking_code ? ' · ' + n.booking_code : '' %></span>
+  </div>
+  <p class="wa-text"><%= n.message %></p>
+  <% if (n.error) { %><p class="small" style="color:var(--danger);margin:0 0 8px"><%= n.error %></p><% } %>
+  <div class="actions-row">
+    <% if (['manual', 'failed', 'pending'].includes(n.status)) { %>
+      <a class="btn btn-sm wa-btn" href="<%= n.wa %>" target="_blank" rel="noopener" data-mark="/app/whatsapp/<%= n.id %>"><%- include('icon', { name: 'chat', size: 16 }) %> <%= t('wa.send') %></a>
+      <form method="post" action="/app/whatsapp/<%= n.id %>"><%- include('csrf') %><input type="hidden" name="back" value="<%= back %>"><button class="btn btn-sm btn-ghost" type="submit"><%= t('wa.markDone') %></button></form>
+    <% } %>
+    <% if (n.status === 'failed') { %>
+      <form method="post" action="/app/whatsapp/<%= n.id %>"><%- include('csrf') %><input type="hidden" name="op" value="retry"><input type="hidden" name="back" value="<%= back %>"><button class="btn btn-sm btn-ghost" type="submit"><%= t('wa.retry') %></button></form>
+    <% } %>
+    <% if (n.status === 'done' && n.handled_by_name) { %><span class="small muted"><%= t('wa.handledBy', { name: n.handled_by_name }) %></span><% } %>
+  </div>
+</div>

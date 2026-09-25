@@ -1,0 +1,13 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div><h1><%= t('wa.title') %></h1><div class="sub"><%= gateway ? t('wa.subGateway') : t('wa.subManual') %></div></div>
+  <div class="actions">
+    <a class="btn <%= showAll ? 'btn-ghost' : '' %>" href="/app/whatsapp"><%= t('wa.open') %></a>
+    <a class="btn <%= showAll ? '' : 'btn-ghost' %>" href="/app/whatsapp?all=1"><%= t('wa.all') %></a>
+  </div>
+</div>
+<div class="card" style="max-width:900px">
+  <% if (!rows.length) { %><div class="empty"><%= t('wa.none') %></div><% } %>
+  <% rows.forEach((n) => { %><%- include('../partials/wa-message', { n, back: '/app/whatsapp' + (showAll ? '?all=1' : '') }) %><% }) %>
+</div>
+<%- include('../partials/app-end') %>

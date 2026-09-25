@@ -37,6 +37,11 @@
       <h2><%= t('settings.business') %></h2>
       <div class="field"><label for="business_phone"><%= t('settings.businessPhone') %></label><input id="business_phone" type="tel" name="business_phone" value="<%= s.business_phone %>" placeholder="0812…" maxlength="20"></div>
       <div class="field"><label for="business_address"><%= t('settings.address') %></label><input id="business_address" type="text" name="business_address" value="<%= s.business_address %>" maxlength="200"></div>
+      <div class="field"><label for="public_url"><%= t('settings.publicUrl') %></label><input id="public_url" type="url" name="public_url" value="<%= s.public_url %>" placeholder="https://…" maxlength="200"><p class="small muted" style="margin:6px 0 0"><%= t('settings.publicUrlHint') %></p></div>
+      <h3 style="font-size:16px;margin:18px 0 8px">WhatsApp</h3>
+      <label class="switch-row"><input type="checkbox" name="whatsapp_enabled" value="1"<%= s.whatsapp_enabled === '1' ? ' checked' : '' %>> <%= t('settings.waEnabled') %></label>
+      <div class="field" style="max-width:260px"><label for="message_lang"><%= t('settings.messageLang') %></label><select id="message_lang" name="message_lang"><option value="id"<%= s.message_lang === 'id' ? ' selected' : '' %>>Bahasa Indonesia</option><option value="en"<%= s.message_lang === 'en' ? ' selected' : '' %>>English</option></select></div>
+      <p class="small <%= gateway ? '' : 'muted' %>"><%= gateway ? t('settings.waGateway') : t('settings.waManual') %></p>
       <button class="btn" type="submit"><%= t('prices.saveOne') %></button>
     </form>
   </div>

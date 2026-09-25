@@ -13,6 +13,8 @@ const DEFAULTS = {
   business_phone: '', // WhatsApp number shown to customers, e.g. 6281234567890
   business_address: '',
   whatsapp_enabled: '1',
+  message_lang: 'id', // language of WhatsApp messages for walk-in customers
+  public_url: '', // e.g. https://cuci.example.com — used for links in WhatsApp messages
   stamp_every: '10', // every Nth paid wash is free; 0 disables the stamp card
 };
 

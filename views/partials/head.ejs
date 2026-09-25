@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  <% if (locals.csrf) { %><meta name="csrf-token" content="<%= csrf %>"><% } %>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 </head>
 <body>

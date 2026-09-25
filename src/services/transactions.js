@@ -4,6 +4,7 @@ const { UserError, normalizePlate, toInt, clean, PAYMENT_METHODS } = require('./
 const { packagePrice, activeAddons } = require('./catalog');
 const { upsertVehicle } = require('./vehicles');
 const work = require('./work');
+const notifications = require('./notifications');
 
 /** Price breakdown for a new transaction. */
 function quote({ vehicleTypeId, packageId, addonIds = [], discount = 0 }) {
@@ -56,6 +57,7 @@ function createTransaction(input, userId, { bookingId = null } = {}) {
       db.prepare('INSERT INTO transaction_addons (transaction_id, addon_id, name, name_id, price) VALUES (?, ?, ?, ?, ?)')
         .run(txId, a.id, a.name, a.name_id ?? null, a.price);
     }
+    notifications.notifyTransaction('tx_received', txId);
     return txId;
   });
 }

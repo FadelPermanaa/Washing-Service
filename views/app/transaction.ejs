@@ -34,6 +34,12 @@
       <%- include('../partials/checklist-list', { tx, back: 'detail' }) %>
     </div>
     <% } %>
+    <% if (messages.length) { %>
+    <div class="card">
+      <h2><%= t('wa.title') %></h2>
+      <% messages.forEach((n) => { %><%- include('../partials/wa-message', { n, back: '/app/transactions/' + tx.id }) %><% }) %>
+    </div>
+    <% } %>
     <% if (tx.status !== 'cancelled') { %>
     <div class="card">
       <h2><%= t('detail.actions') %></h2>

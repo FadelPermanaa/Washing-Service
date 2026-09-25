@@ -4,6 +4,7 @@ const { db, now, today, tx } = require('../db');
 const settings = require('../settings');
 const { UserError, normalizePlate, normalizePhone, toInt, clean } = require('./common');
 const { packagePrice, activeAddons } = require('./catalog');
+const notifications = require('./notifications');
 
 const toMin = (hhmm) => {
   const [h, m] = String(hhmm).split(':').map(Number);
@@ -93,6 +94,7 @@ function createBooking(input, { lang = 'id', source = 'online' } = {}) {
       date, slot.time, slot.end, price + addons.reduce((s, a) => s + a.price, 0), status, clean(input.notes, 300),
       lang === 'en' ? 'en' : 'id', source, ts, ts,
     ).lastInsertRowid);
+    notifications.notifyBooking(status === 'confirmed' ? 'booking_confirmed' : 'booking_pending', id);
     return getBooking(id);
   });
 }
@@ -141,6 +143,7 @@ function cancelByCustomer(t) {
   if (!b) throw new UserError('err.bookingNotFound');
   if (!customerCanCancel(b)) throw new UserError('err.bookingCannotCancel');
   db.prepare("UPDATE bookings SET status = 'cancelled', updated_at = ? WHERE id = ?").run(now(), b.id);
+  notifications.notifyBooking('booking_cancelled', b.id);
   return b;
 }
 
@@ -157,6 +160,8 @@ function staffUpdate(id, actionName) {
   if (!b) throw new UserError('err.bookingNotFound');
   if (!rule.from.includes(b.status)) throw new UserError('err.bookingStatus', { status: { key: `booking.status.${b.status}` } });
   db.prepare('UPDATE bookings SET status = ?, updated_at = ? WHERE id = ?').run(rule.to, now(), id);
+  if (actionName === 'confirm') notifications.notifyBooking('booking_confirmed', id);
+  if (actionName === 'cancel') notifications.notifyBooking('booking_cancelled', id);
   return getBooking(id);
 }
 

@@ -626,3 +626,24 @@ div > .card + .card, div > form.card + form.card { margin-top: 18px; }
 .date-nav { display: flex; align-items: center; gap: 6px; }
 .date-nav input { width: auto; }
 a.icon-btn { text-decoration: none; }
+
+/* WhatsApp outbox */
+.wa-msg { border: 1px solid var(--mocha-10); border-radius: 14px; padding: 14px 16px; }
+.wa-msg + .wa-msg { margin-top: 10px; }
+.wa-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.wa-text { white-space: pre-wrap; background: #EAF7EE; border-radius: 12px 12px 12px 4px; padding: 10px 12px; margin: 0 0 10px; font-size: 14px; }
+.wa-btn { background: #1F8F4E; border-color: #1F8F4E; color: var(--white); }
+.wa-done { opacity: .6; }
+.wa-badge-manual, .wa-badge-pending { background: var(--vanilla); color: var(--warn); }
+.wa-badge-sent, .wa-badge-done { background: var(--ok-bg); color: var(--ok); }
+.wa-badge-failed { background: var(--danger-bg); color: var(--danger); }
+.nav-count { margin-left: auto; background: #1F8F4E; color: var(--white); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 8px; }
+.sidebar { overflow-y: auto; }
+@media (min-width: 901px) and (max-height: 860px) {
+  .sidebar { padding-top: 16px; padding-bottom: 14px; }
+  .sidebar .brand { padding-bottom: 12px; }
+  .sidebar a.nav { padding: 7px 12px; }
+  .sidebar .nav-label { padding: 10px 12px 4px; }
+  .sidebar .me { padding-top: 10px; }
+  .sidebar .lang-switch { margin-bottom: 8px; }
+}

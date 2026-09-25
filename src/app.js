@@ -6,6 +6,7 @@ const { requireLogin, requireRole, requireAdmin } = require('./auth');
 const { i18nMiddleware } = require('./i18n');
 const { csrf } = require('./security');
 const settings = require('./settings');
+const { notifications } = require('./services');
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: '1h' }));
 app.use(express.urlencoded({ extended: true, limit: '200kb' }));
 app.use(express.json({ limit: '100kb' }));
+app.use((req, res, next) => { req.body ??= {}; next(); });
 app.use(session({
   name: 'wsh.sid',
   secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
@@ -44,7 +46,9 @@ app.use((req, res, next) => {
   res.locals.rupiah = rupiah;
   res.locals.time = (ts) => (ts ? ts.slice(11, 16) : '—');
   res.locals.shop = settings.all();
-  res.locals.baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+  res.locals.baseUrl = process.env.PUBLIC_URL || res.locals.shop.public_url || `${req.protocol}://${req.get('host')}`;
+  notifications.rememberBaseUrl(res.locals.baseUrl);
+  res.locals.waOpen = req.session.user && req.session.user.role !== 'washer' ? notifications.openCount() : 0;
   next();
 });
 app.use(csrf());
