@@ -27,7 +27,7 @@ const isActive = (href) => href === '/app' ? fullPath === '/app' : (href === '/a
       <%- include('lang-switch', { dark: true }) %>
       <strong><%= user.name %></strong>
       <span class="small"><%= t('role.' + user.role) %> · @<%= user.username %></span>
-      <form method="post" action="/logout"><button class="btn btn-sm btn-block" type="submit"><%= t('nav.logout') %></button></form>
+      <form method="post" action="/logout"><%- include('csrf') %><button class="btn btn-sm btn-block" type="submit"><%= t('nav.logout') %></button></form>
     </div>
   </aside>
   <main class="main">

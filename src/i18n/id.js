@@ -354,4 +354,10 @@ module.exports = {
   'err.passwordShort': 'Kata sandi minimal 6 karakter.',
   'err.usernameTaken': 'Nama pengguna sudah dipakai.',
   'err.selfDisable': 'Anda tidak bisa menonaktifkan akun sendiri.',
+
+  // Security
+  'error.csrfTitle': "Formulir kedaluwarsa",
+  'error.csrf': "Formulir ini sudah kedaluwarsa. Silakan kembali, muat ulang halaman, lalu coba lagi.",
+  'error.tooManyTitle': "Terlalu banyak percobaan",
+  'error.tooMany': "Terlalu banyak percobaan dalam waktu singkat. Tunggu beberapa menit, lalu coba lagi.",
 };

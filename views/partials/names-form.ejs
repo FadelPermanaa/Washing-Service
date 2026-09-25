@@ -1,0 +1,18 @@
+<%# Inline "edit names" form for a catalog item. Locals: kind, item, withDescription %>
+<details class="names-edit">
+  <summary><%= t('prices.edit') %></summary>
+  <form method="post" action="/app/catalog/<%= kind %>/<%= item.id %>/names">
+    <%- include('csrf') %>
+    <div class="field-row">
+      <div class="field"><label><%= t('prices.nameEn') %></label><input type="text" name="name" value="<%= item.name %>" required maxlength="60"></div>
+      <div class="field"><label><%= t('prices.nameId') %></label><input type="text" name="name_id" value="<%= item.name_id || '' %>" maxlength="60"></div>
+    </div>
+    <% if (locals.withDescription) { %>
+    <div class="field-row">
+      <div class="field"><label><%= t('prices.descEn') %></label><input type="text" name="description" value="<%= item.description || '' %>" maxlength="160"></div>
+      <div class="field"><label><%= t('prices.descId') %></label><input type="text" name="description_id" value="<%= item.description_id || '' %>" maxlength="160"></div>
+    </div>
+    <% } %>
+    <button class="btn btn-sm" type="submit"><%= t('prices.saveOne') %></button>
+  </form>
+</details>

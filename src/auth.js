@@ -19,9 +19,15 @@ function requireLogin(req, res, next) {
   res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
 }
 
-function requireAdmin(req, res, next) {
-  if (req.session.user?.role === 'admin') return next();
-  res.status(403).render('error', { title: req.t('error.deniedTitle'), message: req.t('error.denied') });
+/** Allow only the given roles (admin always passes). */
+function requireRole(...roles) {
+  return (req, res, next) => {
+    const role = req.session.user?.role;
+    if (role === 'admin' || roles.includes(role)) return next();
+    res.status(403).render('error', { title: req.t('error.deniedTitle'), message: req.t('error.denied') });
+  };
 }
 
-module.exports = { hashPassword, verifyPassword, requireLogin, requireAdmin };
+const requireAdmin = requireRole('admin');
+
+module.exports = { hashPassword, verifyPassword, requireLogin, requireRole, requireAdmin };

@@ -1,80 +1,81 @@
 <%- include('../partials/app-start') %>
 <div class="topbar">
-  <div><h1>New wash</h1><div class="sub">Register a vehicle, choose a package and add it to the queue.</div></div>
+  <div><h1><%= t('new.title') %></h1><div class="sub"><%= t('new.sub') %></div></div>
 </div>
 
 <form method="post" action="/app/transactions" id="tx-form" class="grid-2">
+  <%- include('../partials/csrf') %>
   <div>
     <div class="card">
-      <h3 class="step-title"><span class="n">1</span>Vehicle</h3>
+      <h3 class="step-title"><span class="n">1</span><%= t('new.step1') %></h3>
       <div class="field">
-        <label for="plate">Plate number</label>
+        <label for="plate"><%= t('new.plate') %></label>
         <input class="plate-input" id="plate" name="plate" type="text" value="<%= plate %>" placeholder="B 1234 XYZ" required maxlength="15" autocomplete="off" autofocus>
         <div class="vehicle-hint" id="vehicle-hint" role="status" aria-live="polite"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label for="brand_model">Brand / model <span class="muted">(optional)</span></label><input id="brand_model" name="brand_model" type="text" maxlength="60" placeholder="Toyota Avanza"></div>
-        <div class="field"><label for="color">Colour <span class="muted">(optional)</span></label><input id="color" name="color" type="text" maxlength="30" placeholder="Silver"></div>
+        <div class="field"><label for="brand_model"><%= t('new.brand') %> <span class="muted"><%= t('new.optional') %></span></label><input id="brand_model" name="brand_model" type="text" maxlength="60" placeholder="Toyota Avanza"></div>
+        <div class="field"><label for="color"><%= t('new.color') %> <span class="muted"><%= t('new.optional') %></span></label><input id="color" name="color" type="text" maxlength="30" placeholder="<%= t('new.colorPh') %>"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label for="customer_name">Customer name <span class="muted">(optional)</span></label><input id="customer_name" name="customer_name" type="text" maxlength="80"></div>
-        <div class="field"><label for="customer_phone">Phone / WhatsApp <span class="muted">(optional)</span></label><input id="customer_phone" name="customer_phone" type="tel" maxlength="20" placeholder="08xx"></div>
+        <div class="field"><label for="customer_name"><%= t('new.customer') %> <span class="muted"><%= t('new.optional') %></span></label><input id="customer_name" name="customer_name" type="text" maxlength="80"></div>
+        <div class="field"><label for="customer_phone"><%= t('new.phone') %> <span class="muted"><%= t('new.optional') %></span></label><input id="customer_phone" name="customer_phone" type="tel" maxlength="20" placeholder="08xx"></div>
       </div>
     </div>
 
     <div class="card">
-      <h3 class="step-title"><span class="n">2</span>Vehicle type</h3>
+      <h3 class="step-title"><span class="n">2</span><%= t('new.step2') %></h3>
       <div class="choice-grid">
-        <% priceList.types.forEach((t, i) => { %>
-          <label class="choice"><input type="radio" name="vehicle_type_id" value="<%= t.id %>" required<%= i === 1 ? ' checked' : '' %>><span><%= t.name %></span></label>
+        <% priceList.types.forEach((vt, i) => { %>
+          <label class="choice"><input type="radio" name="vehicle_type_id" value="<%= vt.id %>" required<%= i === 1 ? ' checked' : '' %>><span><%= L(vt) %></span></label>
         <% }) %>
       </div>
     </div>
 
     <div class="card">
-      <h3 class="step-title"><span class="n">3</span>Package</h3>
+      <h3 class="step-title"><span class="n">3</span><%= t('new.step3') %></h3>
       <div class="choice-grid">
         <% priceList.packages.forEach((p, i) => { %>
-          <label class="choice"><input type="radio" name="package_id" value="<%= p.id %>" required<%= i === 0 ? ' checked' : '' %>><span><%= p.name %><small><%= p.description %></small><span class="price" data-price-for="<%= p.id %>">—</span></span></label>
+          <label class="choice"><input type="radio" name="package_id" value="<%= p.id %>" required<%= i === 0 ? ' checked' : '' %>><span><%= L(p) %><small><%= L(p, 'description') %></small><span class="price" data-price-for="<%= p.id %>">—</span></span></label>
         <% }) %>
       </div>
     </div>
 
     <% if (priceList.addons.length) { %>
     <div class="card">
-      <h3 class="step-title"><span class="n">4</span>Add-ons <span class="muted small" style="font-weight:500">(optional)</span></h3>
+      <h3 class="step-title"><span class="n">4</span><%= t('new.step4') %> <span class="muted small" style="font-weight:500"><%= t('new.optional') %></span></h3>
       <div class="choice-grid">
         <% priceList.addons.forEach((a) => { %>
-          <label class="choice check"><input type="checkbox" name="addon_ids" value="<%= a.id %>"><span><%= a.name %><b><%= rupiah(a.price) %></b></span></label>
+          <label class="choice check"><input type="checkbox" name="addon_ids" value="<%= a.id %>"><span><%= L(a) %><b><%= rupiah(a.price) %></b></span></label>
         <% }) %>
       </div>
     </div>
     <% } %>
   </div>
 
-  <aside class="card summary" aria-label="Order summary">
-    <h2>Summary</h2>
-    <div class="line"><span id="sum-package">Package</span><span id="sum-package-price">—</span></div>
-    <div class="line"><span>Add-ons</span><span id="sum-addons">Rp 0</span></div>
-    <div class="line"><span>Discount</span><span id="sum-discount">− Rp 0</span></div>
-    <div class="line total"><span>Total</span><span id="sum-total">—</span></div>
+  <aside class="card summary" aria-label="<%= t('sum.aria') %>">
+    <h2><%= t('sum.title') %></h2>
+    <div class="line"><span id="sum-package"><%= t('sum.package') %></span><span id="sum-package-price">—</span></div>
+    <div class="line"><span><%= t('sum.addons') %></span><span id="sum-addons">Rp 0</span></div>
+    <div class="line"><span><%= t('sum.discount') %></span><span id="sum-discount">− Rp 0</span></div>
+    <div class="line total"><span><%= t('sum.total') %></span><span id="sum-total">—</span></div>
 
-    <div class="field" style="margin-top:16px"><label for="discount">Discount (Rp)</label><input id="discount" name="discount" type="number" min="0" step="1000" value="0" inputmode="numeric"></div>
-    <label class="switch"><input type="checkbox" name="pay_now" id="pay_now" value="1"> Paid now</label>
+    <div class="field" style="margin-top:16px"><label for="discount"><%= t('new.discount') %></label><input id="discount" name="discount" type="number" min="0" step="1000" value="0" inputmode="numeric"></div>
+    <label class="switch"><input type="checkbox" name="pay_now" id="pay_now" value="1"> <%= t('new.paidNow') %></label>
     <div class="field" id="method-field" hidden>
-      <label for="payment_method">Payment method</label>
-      <select id="payment_method" name="payment_method"><% methods.forEach((m) => { %><option><%= m %></option><% }) %></select>
+      <label for="payment_method"><%= t('field.paymentMethod') %></label>
+      <select id="payment_method" name="payment_method"><% methods.forEach((m) => { %><option value="<%= m %>"><%= t('method.' + m) %></option><% }) %></select>
     </div>
-    <div class="field"><label for="notes">Notes</label><textarea id="notes" name="notes" maxlength="300" placeholder="e.g. scratch on rear bumper"></textarea></div>
-    <p class="small" id="unavailable" style="color:var(--vanilla)" hidden>This package is not available for the selected vehicle type.</p>
-    <button class="btn btn-vanilla btn-lg btn-block" type="submit" id="submit-btn">Add to queue <span class="arrow">→</span></button>
-    <button class="btn btn-sm btn-block" type="submit" name="print" value="1" style="margin-top:10px;border-color:rgba(255,255,255,.25)"><%- include('../partials/icon', { name: 'print', size: 16 }) %> Add &amp; print receipt</button>
+    <div class="field"><label for="notes"><%= t('new.notes') %></label><textarea id="notes" name="notes" maxlength="300" placeholder="<%= t('new.notesPh') %>"></textarea></div>
+    <p class="small" id="unavailable" style="color:var(--vanilla)" hidden><%= t('new.unavailable') %></p>
+    <button class="btn btn-vanilla btn-lg btn-block" type="submit" id="submit-btn"><%= t('new.submit') %> <span class="arrow">→</span></button>
+    <button class="btn btn-sm btn-block" type="submit" name="print" value="1" style="margin-top:10px;border-color:rgba(255,255,255,.25)"><%- include('../partials/icon', { name: 'print', size: 16 }) %> <%= t('new.submitPrint') %></button>
   </aside>
 </form>
 
 <div class="mobile-total" aria-hidden="true">
-  <div><span class="small">Total</span><strong id="mobile-total">—</strong></div>
-  <button class="btn btn-vanilla" type="submit" form="tx-form" tabindex="-1">Add to queue <span class="arrow">→</span></button>
+  <div><span class="small"><%= t('sum.total') %></span><strong id="mobile-total">—</strong></div>
+  <button class="btn btn-vanilla" type="submit" form="tx-form" tabindex="-1"><%= t('new.submit') %> <span class="arrow">→</span></button>
 </div>
 
 <script id="price-data" type="application/json"><%- JSON.stringify({ prices: priceList.prices, addons: Object.fromEntries(priceList.addons.map((a) => [a.id, a.price])) }).replace(/</g, '\\u003c') %></script>

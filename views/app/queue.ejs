@@ -1,14 +1,14 @@
 <%- include('../partials/app-start') %>
 <div class="topbar">
-  <div><h1>Queue</h1><div class="sub">Move each vehicle from Waiting → Washing → Done. Auto-refreshes every 30 seconds.</div></div>
-  <div class="actions"><a class="btn" href="/app/transactions/new"><%- include('../partials/icon', { name: 'plus' }) %> New wash</a></div>
+  <div><h1><%= t('queue.title') %></h1><div class="sub"><%= t('queue.sub') %></div></div>
+  <div class="actions"><a class="btn" href="/app/transactions/new"><%- include('../partials/icon', { name: 'plus' }) %> <%= t('btn.newWash') %></a></div>
 </div>
 <div class="board" data-autorefresh="30">
-  <% [['waiting', 'Waiting'], ['washing', 'Washing'], ['done', 'Done today']].forEach(([key, label]) => { %>
+  <% [['waiting', t('status.waiting')], ['washing', t('status.washing')], ['done', t('queue.doneToday')]].forEach(([key, label]) => { %>
     <section class="lane l-<%= key %>" aria-label="<%= label %>">
       <div class="lane-head"><span><%= label %></span><span class="count"><%= queue[key].length %></span></div>
-      <% if (!queue[key].length) { %><div class="empty">Nothing here.</div><% } %>
-      <% queue[key].forEach((t) => { %><%- include('../partials/ticket', { t, methods }) %><% }) %>
+      <% if (!queue[key].length) { %><div class="empty"><%= t('queue.empty') %></div><% } %>
+      <% queue[key].forEach((r) => { %><%- include('../partials/ticket', { t: r, methods }) %><% }) %>
     </section>
   <% }) %>
 </div>

@@ -347,4 +347,10 @@ module.exports = {
   'err.passwordShort': 'Password must be at least 6 characters.',
   'err.usernameTaken': 'Username already taken.',
   'err.selfDisable': 'You cannot deactivate your own account.',
+
+  // Security
+  'error.csrfTitle': "Form expired",
+  'error.csrf': "This form has expired. Please go back, reload the page and try again.",
+  'error.tooManyTitle': "Too many attempts",
+  'error.tooMany': "Too many attempts in a short time. Please wait a few minutes and try again.",
 };

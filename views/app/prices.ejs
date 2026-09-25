@@ -1,19 +1,20 @@
 <%- include('../partials/app-start') %>
 <% const { types, packages, addons, prices } = priceList; %>
 <div class="topbar">
-  <div><h1>Price list</h1><div class="sub">Set the price of every package for every vehicle type. Leave a cell empty if a package isn't offered for that type.</div></div>
+  <div><h1><%= t('prices.title') %></h1><div class="sub"><%= t('prices.sub') %></div></div>
 </div>
 <form class="card" method="post" action="/app/prices">
-  <div class="card-head"><h2>Package prices (Rp)</h2><button class="btn" type="submit">Save prices</button></div>
+  <%- include('../partials/csrf') %>
+  <div class="card-head"><h2><%= t('prices.grid') %></h2><button class="btn" type="submit"><%= t('prices.save') %></button></div>
   <div class="table-wrap">
     <table class="data">
-      <thead><tr><th>Package</th><% types.forEach((t) => { %><th class="num<%= t.active ? '' : ' inactive' %>"><%= t.name %></th><% }) %></tr></thead>
+      <thead><tr><th><%= t('col.package') %></th><% types.forEach((vt) => { %><th class="num<%= vt.active ? '' : ' inactive' %>"><%= L(vt) %></th><% }) %></tr></thead>
       <tbody>
         <% packages.forEach((p) => { %>
           <tr class="<%= p.active ? '' : 'inactive' %>">
-            <td><strong><%= p.name %></strong><div class="small muted"><%= p.description || '' %></div></td>
-            <% types.forEach((t) => { const v = prices[p.id + ':' + t.id]; %>
-              <td class="num"><input class="price-input" type="number" min="0" step="500" name="price_<%= p.id %>_<%= t.id %>" value="<%= v ?? '' %>" aria-label="<%= p.name %> — <%= t.name %>" inputmode="numeric"></td>
+            <td><strong><%= L(p) %></strong><div class="small muted"><%= L(p, 'description') %></div></td>
+            <% types.forEach((vt) => { const v = prices[p.id + ':' + vt.id]; %>
+              <td class="num"><input class="price-input" type="number" min="0" step="500" name="price_<%= p.id %>_<%= vt.id %>" value="<%= v ?? '' %>" aria-label="<%= L(p) %> — <%= L(vt) %>" inputmode="numeric"></td>
             <% }) %>
           </tr>
         <% }) %>
@@ -22,57 +23,88 @@
   </div>
 </form>
 
-<div class="grid-2-even" style="margin-top:18px">
+<p class="small muted" style="margin:14px 2px 0"><%= t('prices.bilingualHint') %></p>
+
+<div class="grid-2-even" style="margin-top:14px">
   <div class="card">
-    <h2>Vehicle types</h2>
-    <div class="table-wrap"><table class="data"><tbody>
-      <% types.forEach((t) => { %>
-        <tr class="<%= t.active ? '' : 'inactive' %>"><td><%= t.name %></td><td class="num">
-          <form method="post" action="/app/catalog/vehicle-types/<%= t.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= t.active ? 'Hide' : 'Show' %></button></form>
-        </td></tr>
+    <h2><%= t('prices.types') %></h2>
+    <div class="catalog-list">
+      <% types.forEach((vt) => { %>
+        <div class="catalog-item<%= vt.active ? '' : ' inactive' %>">
+          <div class="catalog-row">
+            <div><strong><%= vt.name %></strong><% if (vt.name_id) { %><div class="small muted"><%= vt.name_id %></div><% } %></div>
+            <form method="post" action="/app/catalog/vehicle-types/<%= vt.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= vt.active ? t('prices.hide') : t('prices.show') %></button></form>
+          </div>
+          <%- include('../partials/names-form', { kind: 'vehicle-types', item: vt }) %>
+        </div>
       <% }) %>
-    </tbody></table></div>
-    <form class="filters" method="post" action="/app/catalog/vehicle-types" style="margin:14px 0 0">
-      <input type="text" name="name" placeholder="New vehicle type" required maxlength="40" aria-label="New vehicle type" style="flex:1">
-      <button class="btn" type="submit">Add</button>
+    </div>
+    <form method="post" action="/app/catalog/vehicle-types" class="add-form">
+      <%- include('../partials/csrf') %>
+      <div class="field-row">
+        <input type="text" name="name" placeholder="<%= t('prices.nameEn') %>" required maxlength="60" aria-label="<%= t('prices.nameEn') %>">
+        <input type="text" name="name_id" placeholder="<%= t('prices.nameId') %>" maxlength="60" aria-label="<%= t('prices.nameId') %>">
+      </div>
+      <button class="btn" type="submit"><%= t('prices.add') %></button>
     </form>
 
-    <h2 style="margin-top:28px">Packages</h2>
-    <div class="table-wrap"><table class="data"><tbody>
+    <h2 style="margin-top:28px"><%= t('prices.packages') %></h2>
+    <div class="catalog-list">
       <% packages.forEach((p) => { %>
-        <tr class="<%= p.active ? '' : 'inactive' %>"><td><%= p.name %></td><td class="num">
-          <form method="post" action="/app/catalog/packages/<%= p.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= p.active ? 'Hide' : 'Show' %></button></form>
-        </td></tr>
+        <div class="catalog-item<%= p.active ? '' : ' inactive' %>">
+          <div class="catalog-row">
+            <div><strong><%= p.name %></strong><% if (p.name_id) { %><div class="small muted"><%= p.name_id %></div><% } %></div>
+            <form method="post" action="/app/catalog/packages/<%= p.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= p.active ? t('prices.hide') : t('prices.show') %></button></form>
+          </div>
+          <%- include('../partials/names-form', { kind: 'packages', item: p, withDescription: true }) %>
+        </div>
       <% }) %>
-    </tbody></table></div>
-    <form method="post" action="/app/catalog/packages" style="margin-top:14px">
+    </div>
+    <form method="post" action="/app/catalog/packages" class="add-form">
+      <%- include('../partials/csrf') %>
       <div class="field-row">
-        <input type="text" name="name" placeholder="New package name" required maxlength="50" aria-label="Package name">
-        <input type="text" name="description" placeholder="Short description" maxlength="120" aria-label="Package description">
+        <input type="text" name="name" placeholder="<%= t('prices.nameEn') %>" required maxlength="60" aria-label="<%= t('prices.nameEn') %>">
+        <input type="text" name="name_id" placeholder="<%= t('prices.nameId') %>" maxlength="60" aria-label="<%= t('prices.nameId') %>">
       </div>
-      <button class="btn" type="submit" style="margin-top:10px">Add package</button>
-      <p class="small muted" style="margin:8px 0 0">After adding, set its prices in the table above.</p>
+      <div class="field-row">
+        <input type="text" name="description" placeholder="<%= t('prices.descEn') %>" maxlength="160" aria-label="<%= t('prices.descEn') %>">
+        <input type="text" name="description_id" placeholder="<%= t('prices.descId') %>" maxlength="160" aria-label="<%= t('prices.descId') %>">
+      </div>
+      <button class="btn" type="submit"><%= t('prices.addPackage') %></button>
+      <p class="small muted" style="margin:8px 0 0"><%= t('prices.afterAdd') %></p>
     </form>
   </div>
 
   <div class="card">
-    <h2>Add-ons</h2>
-    <div class="table-wrap"><table class="data"><tbody>
+    <h2><%= t('prices.addons') %></h2>
+    <div class="catalog-list">
       <% addons.forEach((a) => { %>
-        <tr class="<%= a.active ? '' : 'inactive' %>">
-          <td><%= a.name %></td>
-          <td class="num"><form class="filters" style="margin:0;justify-content:flex-end" method="post" action="/app/catalog/addons/<%= a.id %>/price">
-            <input class="price-input" type="number" min="0" step="500" name="price" value="<%= a.price %>" aria-label="Price for <%= a.name %>">
-            <button class="btn btn-sm" type="submit">Save</button>
-          </form></td>
-          <td class="num"><form method="post" action="/app/catalog/addons/<%= a.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= a.active ? 'Hide' : 'Show' %></button></form></td>
-        </tr>
+        <div class="catalog-item<%= a.active ? '' : ' inactive' %>">
+          <div class="catalog-row">
+            <div><strong><%= a.name %></strong><% if (a.name_id) { %><div class="small muted"><%= a.name_id %></div><% } %></div>
+            <div class="catalog-actions">
+              <form class="inline" method="post" action="/app/catalog/addons/<%= a.id %>/price">
+                <%- include('../partials/csrf') %>
+                <input class="price-input" type="number" min="0" step="500" name="price" value="<%= a.price %>" aria-label="<%= t('prices.price') %> — <%= L(a) %>">
+                <button class="btn btn-sm" type="submit"><%= t('prices.saveOne') %></button>
+              </form>
+              <form method="post" action="/app/catalog/addons/<%= a.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= a.active ? t('prices.hide') : t('prices.show') %></button></form>
+            </div>
+          </div>
+          <%- include('../partials/names-form', { kind: 'addons', item: a }) %>
+        </div>
       <% }) %>
-    </tbody></table></div>
-    <form class="filters" method="post" action="/app/catalog/addons" style="margin:14px 0 0">
-      <input type="text" name="name" placeholder="New add-on" required maxlength="40" aria-label="New add-on" style="flex:1">
-      <input class="price-input" type="number" name="price" min="0" step="500" placeholder="Price" required aria-label="Add-on price">
-      <button class="btn" type="submit">Add</button>
+    </div>
+    <form method="post" action="/app/catalog/addons" class="add-form">
+      <%- include('../partials/csrf') %>
+      <div class="field-row">
+        <input type="text" name="name" placeholder="<%= t('prices.nameEn') %>" required maxlength="60" aria-label="<%= t('prices.nameEn') %>">
+        <input type="text" name="name_id" placeholder="<%= t('prices.nameId') %>" maxlength="60" aria-label="<%= t('prices.nameId') %>">
+      </div>
+      <div class="filters" style="margin:10px 0 0">
+        <input class="price-input" type="number" name="price" min="0" step="500" placeholder="<%= t('prices.price') %>" required aria-label="<%= t('prices.price') %>">
+        <button class="btn" type="submit"><%= t('prices.add') %></button>
+      </div>
     </form>
   </div>
 </div>

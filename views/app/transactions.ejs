@@ -1,36 +1,36 @@
 <%- include('../partials/app-start') %>
 <div class="topbar">
-  <div><h1>Transactions</h1><div class="sub"><%= rows.length %> result<%= rows.length === 1 ? '' : 's' %><%= rows.length === 300 ? ' (showing latest 300)' : '' %></div></div>
-  <div class="actions"><a class="btn" href="/app/transactions/new"><%- include('../partials/icon', { name: 'plus' }) %> New wash</a></div>
+  <div><h1><%= t('tx.title') %></h1><div class="sub"><%= t('tx.results', { n: rows.length }) %><%= rows.length === 300 ? t('tx.latest') : '' %></div></div>
+  <div class="actions"><a class="btn" href="/app/transactions/new"><%- include('../partials/icon', { name: 'plus' }) %> <%= t('btn.newWash') %></a></div>
 </div>
 <div class="card">
   <form class="filters" method="get">
-    <input type="search" name="q" value="<%= filters.q %>" placeholder="Search plate, ticket or customer" aria-label="Search">
-    <input type="date" name="date" value="<%= filters.date %>" aria-label="Date">
-    <select name="status" aria-label="Status">
-      <option value="">All statuses</option>
-      <% [['waiting','Waiting'],['washing','Washing'],['done','Done'],['cancelled','Cancelled'],['unpaid','Unpaid']].forEach(([v, l]) => { %>
-        <option value="<%= v %>"<%= filters.status === v ? ' selected' : '' %>><%= l %></option>
+    <input type="search" name="q" value="<%= filters.q %>" placeholder="<%= t('tx.searchPh') %>" aria-label="<%= t('btn.search') %>">
+    <input type="date" name="date" value="<%= filters.date %>" aria-label="<%= t('col.date') %>">
+    <select name="status" aria-label="<%= t('col.status') %>">
+      <option value=""><%= t('tx.allStatuses') %></option>
+      <% [['waiting', 'status.waiting'], ['washing', 'status.washing'], ['done', 'status.done'], ['cancelled', 'status.cancelled'], ['unpaid', 'pay.unpaid']].forEach(([v, k]) => { %>
+        <option value="<%= v %>"<%= filters.status === v ? ' selected' : '' %>><%= t(k) %></option>
       <% }) %>
     </select>
-    <button class="btn" type="submit">Filter</button>
-    <a class="btn btn-ghost" href="/app/transactions?date=all">All dates</a>
+    <button class="btn" type="submit"><%= t('btn.filter') %></button>
+    <a class="btn btn-ghost" href="/app/transactions?date=all"><%= t('tx.allDates') %></a>
   </form>
   <div class="table-wrap">
     <table class="data stack">
-      <thead><tr><th>Ticket</th><th>Date</th><th>Plate</th><th>Customer</th><th>Package</th><th>Status</th><th>Payment</th><th class="num">Total</th></tr></thead>
+      <thead><tr><th><%= t('col.ticket') %></th><th><%= t('col.date') %></th><th><%= t('col.plate') %></th><th><%= t('col.customer') %></th><th><%= t('col.package') %></th><th><%= t('col.status') %></th><th><%= t('col.payment') %></th><th class="num"><%= t('col.total') %></th></tr></thead>
       <tbody>
-        <% if (!rows.length) { %><tr><td colspan="8" class="empty">No transactions match these filters.</td></tr><% } %>
-        <% rows.forEach((t) => { %>
+        <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%= t('tx.none') %></td></tr><% } %>
+        <% rows.forEach((r) => { %>
           <tr>
-            <td data-label="Ticket"><a class="row-link" href="/app/transactions/<%= t.id %>"><%= t.code %></a></td>
-            <td data-label="Date" class="mono nowrap"><%= t.created_at.slice(0, 16) %></td>
-            <td data-label="Plate"><span class="plate"><%= t.plate %></span></td>
-            <td data-label="Customer"><%= t.customer_name || '—' %></td>
-            <td data-label="Package"><%= t.package_name %><div class="small muted"><%= t.vehicle_type_name %></div></td>
-            <td data-label="Status"><span class="badge badge-<%= t.status %>"><%= t.status %></span></td>
-            <td data-label="Payment"><span class="badge badge-<%= t.payment_status %>"><%= t.payment_status %></span><% if (t.payment_method) { %><div class="small muted"><%= t.payment_method %></div><% } %></td>
-            <td data-label="Total" class="num nowrap"><%= rupiah(t.total) %></td>
+            <td data-label="<%= t('col.ticket') %>"><a class="row-link" href="/app/transactions/<%= r.id %>"><%= r.code %></a></td>
+            <td data-label="<%= t('col.date') %>" class="mono nowrap"><%= r.created_at.slice(0, 16) %></td>
+            <td data-label="<%= t('col.plate') %>"><span class="plate"><%= r.plate %></span></td>
+            <td data-label="<%= t('col.customer') %>"><%= r.customer_name || '—' %></td>
+            <td data-label="<%= t('col.package') %>"><%= L(r, 'package_name') %><div class="small muted"><%= L(r, 'vehicle_type_name') %></div></td>
+            <td data-label="<%= t('col.status') %>"><span class="badge badge-<%= r.status %>"><%= t('status.' + r.status) %></span></td>
+            <td data-label="<%= t('col.payment') %>"><span class="badge badge-<%= r.payment_status %>"><%= t('pay.' + r.payment_status) %></span><% if (r.payment_method) { %><div class="small muted"><%= t('method.' + r.payment_method) %></div><% } %></td>
+            <td data-label="<%= t('col.total') %>" class="num nowrap"><%= rupiah(r.total) %></td>
           </tr>
         <% }) %>
       </tbody>

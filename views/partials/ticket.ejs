@@ -11,12 +11,12 @@
   <% if (locals.actions !== false) { %>
   <div class="ticket-actions">
     <% if (t.status === 'waiting') { %>
-      <form method="post" action="/app/transactions/<%= t.id %>/status"><input type="hidden" name="action" value="start"><button class="btn btn-sm" type="submit"><%= tr('action.start') %></button></form>
+      <form method="post" action="/app/transactions/<%= t.id %><%- include('csrf') %>/status"><input type="hidden" name="action" value="start"><button class="btn btn-sm" type="submit"><%= tr('action.start') %></button></form>
     <% } else if (t.status === 'washing') { %>
-      <form method="post" action="/app/transactions/<%= t.id %>/status"><input type="hidden" name="action" value="finish"><button class="btn btn-sm btn-sky" type="submit"><%= tr('action.finish') %></button></form>
+      <form method="post" action="/app/transactions/<%= t.id %><%- include('csrf') %>/status"><input type="hidden" name="action" value="finish"><button class="btn btn-sm btn-sky" type="submit"><%= tr('action.finish') %></button></form>
     <% } %>
     <% if (t.payment_status === 'unpaid') { %>
-      <form method="post" action="/app/transactions/<%= t.id %>/pay">
+      <form method="post" action="/app/transactions/<%= t.id %><%- include('csrf') %>/pay">
         <select name="method" aria-label="<%= tr('field.paymentMethod') %>"><% methods.forEach((m) => { %><option value="<%= m %>"><%= tr('method.' + m) %></option><% }) %></select>
         <button class="btn btn-sm btn-vanilla" type="submit"><%= tr('action.pay') %></button>
       </form>

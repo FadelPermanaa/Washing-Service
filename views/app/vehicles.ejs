@@ -1,27 +1,27 @@
 <%- include('../partials/app-start') %>
 <div class="topbar">
-  <div><h1>Vehicles</h1><div class="sub">Every plate that has visited, with its owner and history.</div></div>
+  <div><h1><%= t('veh.title') %></h1><div class="sub"><%= t('veh.sub') %></div></div>
 </div>
 <div class="card">
   <form class="filters" method="get">
-    <input type="search" name="q" value="<%= q %>" placeholder="Search plate, customer, phone or model" aria-label="Search">
-    <button class="btn" type="submit">Search</button>
+    <input type="search" name="q" value="<%= q %>" placeholder="<%= t('veh.searchPh') %>" aria-label="<%= t('btn.search') %>">
+    <button class="btn" type="submit"><%= t('btn.search') %></button>
   </form>
   <div class="table-wrap">
     <table class="data stack">
-      <thead><tr><th>Plate</th><th>Type</th><th>Vehicle</th><th>Customer</th><th class="num">Visits</th><th class="num">Spent</th><th>Last visit</th><th></th></tr></thead>
+      <thead><tr><th><%= t('col.plate') %></th><th><%= t('col.type') %></th><th><%= t('col.vehicle') %></th><th><%= t('col.customer') %></th><th class="num"><%= t('col.visits') %></th><th class="num"><%= t('col.spent') %></th><th><%= t('col.lastVisit') %></th><th></th></tr></thead>
       <tbody>
-        <% if (!rows.length) { %><tr><td colspan="8" class="empty">No vehicles found.</td></tr><% } %>
+        <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%= t('veh.none') %></td></tr><% } %>
         <% rows.forEach((v) => { %>
           <tr>
-            <td data-label="Plate"><span class="plate"><%= v.plate %></span></td>
-            <td data-label="Type"><%= v.type_name %></td>
-            <td data-label="Vehicle"><%= [v.brand_model, v.color].filter(Boolean).join(' · ') || '—' %></td>
-            <td data-label="Customer"><%= v.customer_name || '—' %><% if (v.customer_phone) { %><div class="small muted"><%= v.customer_phone %></div><% } %></td>
-            <td data-label="Visits" class="num"><%= v.visits %></td>
-            <td data-label="Spent" class="num nowrap"><%= rupiah(v.spent) %></td>
-            <td data-label="Last visit" class="mono nowrap"><%= v.last_visit ? v.last_visit.slice(0, 10) : '—' %></td>
-            <td data-label="" class="nowrap"><a class="btn btn-sm btn-ghost" href="/app/transactions?date=all&q=<%= encodeURIComponent(v.plate) %>">History</a> <a class="btn btn-sm" href="/app/transactions/new?plate=<%= encodeURIComponent(v.plate) %>">Wash</a></td>
+            <td data-label="<%= t('col.plate') %>"><span class="plate"><%= v.plate %></span></td>
+            <td data-label="<%= t('col.type') %>"><%= L(v, 'type_name') %></td>
+            <td data-label="<%= t('col.vehicle') %>"><%= [v.brand_model, v.color].filter(Boolean).join(' · ') || '—' %></td>
+            <td data-label="<%= t('col.customer') %>"><%= v.customer_name || '—' %><% if (v.customer_phone) { %><div class="small muted"><%= v.customer_phone %></div><% } %></td>
+            <td data-label="<%= t('col.visits') %>" class="num"><%= v.visits %></td>
+            <td data-label="<%= t('col.spent') %>" class="num nowrap"><%= rupiah(v.spent) %></td>
+            <td data-label="<%= t('col.lastVisit') %>" class="mono nowrap"><%= v.last_visit ? v.last_visit.slice(0, 10) : '—' %></td>
+            <td data-label="" class="nowrap"><a class="btn btn-sm btn-ghost" href="/app/transactions?date=all&q=<%= encodeURIComponent(v.plate) %>"><%= t('veh.history') %></a> <a class="btn btn-sm" href="/app/transactions/new?plate=<%= encodeURIComponent(v.plate) %>"><%= t('veh.wash') %></a></td>
           </tr>
         <% }) %>
       </tbody>

@@ -28,6 +28,8 @@
   // Auto print receipt
   if (document.body.querySelector('[data-autoprint]')) window.addEventListener('load', () => setTimeout(() => window.print(), 300));
 
+  document.querySelectorAll('[data-print]').forEach((btn) => btn.addEventListener('click', () => window.print()));
+
   // Confirm dangerous actions
   document.querySelectorAll('form[data-confirm]').forEach((f) => {
     f.addEventListener('submit', (e) => { if (!confirm(f.dataset.confirm)) e.preventDefault(); });

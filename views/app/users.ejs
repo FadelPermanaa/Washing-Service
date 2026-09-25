@@ -1,24 +1,25 @@
 <%- include('../partials/app-start') %>
 <div class="topbar">
-  <div><h1>Staff</h1><div class="sub">Cashiers can run the counter; admins can also change prices and manage staff.</div></div>
+  <div><h1><%= t('users.title') %></h1><div class="sub"><%= t('users.sub') %></div></div>
 </div>
 <div class="grid-2">
   <div class="card">
     <div class="table-wrap">
-      <table class="data">
-        <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Reset password</th><th></th></tr></thead>
+      <table class="data stack">
+        <thead><tr><th><%= t('col.name') %></th><th><%= t('col.username') %></th><th><%= t('col.role') %></th><th><%= t('col.status') %></th><th><%= t('col.resetPassword') %></th><th></th></tr></thead>
         <tbody>
           <% users.forEach((u) => { %>
             <tr class="<%= u.active ? '' : 'inactive' %>">
-              <td><strong><%= u.name %></strong></td>
-              <td>@<%= u.username %></td>
-              <td><span class="badge <%= u.role === 'admin' ? 'badge-paid' : 'badge-washing' %>"><%= u.role %></span></td>
-              <td><%= u.active ? 'Active' : 'Disabled' %></td>
-              <td><form class="filters" style="margin:0;flex-wrap:nowrap" method="post" action="/app/users/<%= u.id %>/password">
-                <input type="password" name="password" placeholder="New password" minlength="6" required aria-label="New password for <%= u.username %>" style="min-width:140px">
-                <button class="btn btn-sm" type="submit">Set</button>
+              <td data-label="<%= t('col.name') %>"><strong><%= u.name %></strong></td>
+              <td data-label="<%= t('col.username') %>">@<%= u.username %></td>
+              <td data-label="<%= t('col.role') %>"><span class="badge <%= u.role === 'admin' ? 'badge-paid' : 'badge-washing' %>"><%= t('role.' + u.role) %></span></td>
+              <td data-label="<%= t('col.status') %>"><%= u.active ? t('users.active') : t('users.disabled') %></td>
+              <td data-label="<%= t('col.resetPassword') %>"><form class="filters" style="margin:0;flex-wrap:nowrap" method="post" action="/app/users/<%= u.id %>/password">
+                <%- include('../partials/csrf') %>
+                <input type="password" name="password" placeholder="<%= t('users.newPassword') %>" minlength="6" required aria-label="<%= t('users.newPassword') %> — <%= u.username %>" autocomplete="new-password" style="min-width:140px">
+                <button class="btn btn-sm" type="submit"><%= t('users.set') %></button>
               </form></td>
-              <td class="num"><% if (u.id !== user.id) { %><form method="post" action="/app/users/<%= u.id %>/toggle"><button class="btn btn-sm btn-ghost" type="submit"><%= u.active ? 'Disable' : 'Enable' %></button></form><% } else { %><span class="small muted">You</span><% } %></td>
+              <td data-label="" class="num"><% if (u.id !== user.id) { %><form method="post" action="/app/users/<%= u.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= u.active ? t('users.disable') : t('users.enable') %></button></form><% } else { %><span class="small muted"><%= t('users.you') %></span><% } %></td>
             </tr>
           <% }) %>
         </tbody>
@@ -26,12 +27,13 @@
     </div>
   </div>
   <form class="card" method="post" action="/app/users">
-    <h2>Add staff account</h2>
-    <div class="field"><label for="u-name">Full name</label><input id="u-name" name="name" type="text" required maxlength="60"></div>
-    <div class="field"><label for="u-username">Username</label><input id="u-username" name="username" type="text" required pattern="[a-zA-Z0-9._\-]{3,30}" maxlength="30" autocomplete="off"></div>
-    <div class="field"><label for="u-password">Password</label><input id="u-password" name="password" type="password" required minlength="6" autocomplete="new-password"></div>
-    <div class="field"><label for="u-role">Role</label><select id="u-role" name="role"><option value="cashier">Cashier</option><option value="admin">Admin</option></select></div>
-    <button class="btn btn-block" type="submit">Create account</button>
+    <%- include('../partials/csrf') %>
+    <h2><%= t('users.add') %></h2>
+    <div class="field"><label for="u-name"><%= t('users.fullName') %></label><input id="u-name" name="name" type="text" required maxlength="60"></div>
+    <div class="field"><label for="u-username"><%= t('col.username') %></label><input id="u-username" name="username" type="text" required pattern="[a-zA-Z0-9._\-]{3,30}" maxlength="30" autocomplete="off"></div>
+    <div class="field"><label for="u-password"><%= t('login.password') %></label><input id="u-password" name="password" type="password" required minlength="6" autocomplete="new-password"></div>
+    <div class="field"><label for="u-role"><%= t('users.role') %></label><select id="u-role" name="role"><option value="cashier"><%= t('role.cashier') %></option><option value="admin"><%= t('role.admin') %></option></select></div>
+    <button class="btn btn-block" type="submit"><%= t('users.create') %></button>
   </form>
 </div>
 <%- include('../partials/app-end') %>

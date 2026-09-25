@@ -514,3 +514,17 @@ table.data a.row-link:hover { text-decoration: underline; }
 @media (max-width: 900px) {
   .mobile-bar .right { display: flex; align-items: center; gap: 10px; }
 }
+
+/* Catalog admin lists */
+.catalog-list { display: flex; flex-direction: column; gap: 8px; }
+.catalog-item { border: 1px solid var(--mocha-10); border-radius: 14px; padding: 10px 14px; }
+.catalog-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.catalog-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+form.inline { display: inline-flex; gap: 6px; align-items: center; }
+.names-edit summary { cursor: pointer; font-size: 13px; color: var(--mocha-60); margin-top: 6px; }
+.names-edit form { margin-top: 10px; }
+.names-edit .field { margin-bottom: 10px; }
+.add-form { margin-top: 14px; display: grid; gap: 10px; }
+.add-form .field-row { margin: 0; }
+.add-form > .btn { justify-self: start; }
+.bars { overflow-x: clip; overflow-y: visible; }

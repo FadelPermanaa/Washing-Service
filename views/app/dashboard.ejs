@@ -1,34 +1,34 @@
 <%- include('../partials/app-start') %>
 <div class="topbar">
   <div>
-    <h1>Good <%= new Date().getHours() < 11 ? 'morning' : new Date().getHours() < 15 ? 'afternoon' : 'evening' %>, <%= user.name.split(' ')[0] %></h1>
-    <div class="sub"><%= new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></div>
+    <h1><%= t('greet', { h: new Date().getHours() }) %>, <%= user.name.split(' ')[0] %></h1>
+    <div class="sub"><%= new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></div>
   </div>
-  <div class="actions"><a class="btn" href="/app/transactions/new"><%- include('../partials/icon', { name: 'plus' }) %> New wash</a></div>
+  <div class="actions"><a class="btn" href="/app/transactions/new"><%- include('../partials/icon', { name: 'plus' }) %> <%= t('btn.newWash') %></a></div>
 </div>
 
 <div class="kpis">
-  <div class="kpi k-dark"><div class="label">Revenue today (paid)</div><div class="value mono"><%= rupiah(stats.revenue) %></div></div>
-  <div class="kpi k-vanilla"><div class="label">Vehicles today</div><div class="value mono"><%= stats.vehicles %></div></div>
-  <div class="kpi k-sky"><div class="label">In queue now</div><div class="value mono"><%= stats.waiting + stats.washing %></div><div class="small"><%= stats.waiting %> waiting · <%= stats.washing %> washing</div></div>
-  <div class="kpi"><div class="label">Unpaid</div><div class="value mono"><%= rupiah(stats.outstanding) %></div></div>
+  <div class="kpi k-dark"><div class="label"><%= t('kpi.revenueToday') %></div><div class="value mono"><%= rupiah(stats.revenue) %></div></div>
+  <div class="kpi k-vanilla"><div class="label"><%= t('kpi.vehiclesToday') %></div><div class="value mono"><%= stats.vehicles %></div></div>
+  <div class="kpi k-sky"><div class="label"><%= t('kpi.inQueue') %></div><div class="value mono"><%= stats.waiting + stats.washing %></div><div class="small"><%= t('kpi.queueBreakdown', { w: stats.waiting, x: stats.washing }) %></div></div>
+  <div class="kpi"><div class="label"><%= t('kpi.unpaid') %></div><div class="value mono"><%= rupiah(stats.outstanding) %></div></div>
 </div>
 
 <div class="grid-2">
   <div class="card">
-    <div class="card-head"><h2>Today's transactions</h2><a class="btn btn-sm btn-ghost" href="/app/transactions">View all</a></div>
+    <div class="card-head"><h2><%= t('dash.today') %></h2><a class="btn btn-sm btn-ghost" href="/app/transactions"><%= t('dash.viewAll') %></a></div>
     <div class="table-wrap">
       <table class="data stack">
-        <thead><tr><th>Time</th><th>Plate</th><th>Package</th><th>Status</th><th class="num">Total</th></tr></thead>
+        <thead><tr><th><%= t('col.time') %></th><th><%= t('col.plate') %></th><th><%= t('col.package') %></th><th><%= t('col.status') %></th><th class="num"><%= t('col.total') %></th></tr></thead>
         <tbody>
-          <% if (!recent.length) { %><tr><td colspan="5" class="empty">No vehicles yet today. <a href="/app/transactions/new">Add the first one →</a></td></tr><% } %>
-          <% recent.forEach((t) => { %>
+          <% if (!recent.length) { %><tr><td colspan="5" class="empty"><%= t('dash.emptyToday') %> <a href="/app/transactions/new"><%= t('dash.addFirst') %></a></td></tr><% } %>
+          <% recent.forEach((r) => { %>
             <tr>
-              <td data-label="Time" class="mono"><%= time(t.created_at) %></td>
-              <td data-label="Plate"><a class="row-link" href="/app/transactions/<%= t.id %>"><span class="plate"><%= t.plate %></span></a></td>
-              <td data-label="Package"><%= t.package_name %><div class="small muted"><%= t.vehicle_type_name %></div></td>
-              <td data-label="Status"><span class="badge badge-<%= t.status %>"><%= t.status %></span></td>
-              <td data-label="Total" class="num nowrap"><%= rupiah(t.total) %><div><span class="badge badge-<%= t.payment_status %>"><%= t.payment_status %></span></div></td>
+              <td data-label="<%= t('col.time') %>" class="mono"><%= time(r.created_at) %></td>
+              <td data-label="<%= t('col.plate') %>"><a class="row-link" href="/app/transactions/<%= r.id %>"><span class="plate"><%= r.plate %></span></a></td>
+              <td data-label="<%= t('col.package') %>"><%= L(r, 'package_name') %><div class="small muted"><%= L(r, 'vehicle_type_name') %></div></td>
+              <td data-label="<%= t('col.status') %>"><span class="badge badge-<%= r.status %>"><%= t('status.' + r.status) %></span></td>
+              <td data-label="<%= t('col.total') %>" class="num nowrap"><%= rupiah(r.total) %><div><span class="badge badge-<%= r.payment_status %>"><%= t('pay.' + r.payment_status) %></span></div></td>
             </tr>
           <% }) %>
         </tbody>
@@ -36,10 +36,10 @@
     </div>
   </div>
   <div class="card">
-    <div class="card-head"><h2>In the queue</h2><a class="btn btn-sm btn-ghost" href="/app/queue">Open queue</a></div>
-    <% if (!queue.washing.length && !queue.waiting.length) { %><div class="empty">The queue is empty.</div><% } %>
-    <% queue.washing.concat(queue.waiting).slice(0, 5).forEach((t) => { %>
-      <%- include('../partials/ticket', { t, actions: false }) %>
+    <div class="card-head"><h2><%= t('dash.inQueue') %></h2><a class="btn btn-sm btn-ghost" href="/app/queue"><%= t('dash.openQueue') %></a></div>
+    <% if (!queue.washing.length && !queue.waiting.length) { %><div class="empty"><%= t('dash.queueEmpty') %></div><% } %>
+    <% queue.washing.concat(queue.waiting).slice(0, 5).forEach((r) => { %>
+      <%- include('../partials/ticket', { t: r, actions: false }) %>
     <% }) %>
   </div>
 </div>

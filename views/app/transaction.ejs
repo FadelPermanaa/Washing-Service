@@ -1,9 +1,9 @@
 <%- include('../partials/app-start') %>
 <div class="topbar">
-  <div><h1><%= tx.code %></h1><div class="sub"><span class="badge badge-<%= tx.status %>"><%= tx.status %></span> <span class="badge badge-<%= tx.payment_status %>"><%= tx.payment_status %></span></div></div>
+  <div><h1><%= tx.code %></h1><div class="sub"><span class="badge badge-<%= tx.status %>"><%= t('status.' + tx.status) %></span> <span class="badge badge-<%= tx.payment_status %>"><%= t('pay.' + tx.payment_status) %></span></div></div>
   <div class="actions">
-    <a class="btn btn-ghost" href="/app/transactions">← Back</a>
-    <button class="btn" type="button" onclick="window.print()"><%- include('../partials/icon', { name: 'print' }) %> Print receipt</button>
+    <a class="btn btn-ghost" href="/app/transactions"><%= t('detail.back') %></a>
+    <button class="btn" type="button" data-print><%- include('../partials/icon', { name: 'print' }) %> <%= t('detail.print') %></button>
   </div>
 </div>
 <div class="grid-2">
@@ -11,39 +11,40 @@
     <div class="card">
       <% const idx = { waiting: 1, washing: 2, done: 3, cancelled: 0 }[tx.status]; %>
       <div class="timeline">
-        <div class="<%= idx >= 1 ? 'on' : '' %>">Received<br><%= time(tx.created_at) %></div>
-        <div class="<%= idx >= 2 ? 'on' : '' %>">Washing<br><%= time(tx.started_at) %></div>
-        <div class="<%= idx >= 3 ? 'on' : '' %>">Done<br><%= time(tx.finished_at) %></div>
+        <div class="<%= idx >= 1 ? 'on' : '' %>"><%= t('timeline.received') %><br><%= time(tx.created_at) %></div>
+        <div class="<%= idx >= 2 ? 'on' : '' %>"><%= t('timeline.washing') %><br><%= time(tx.started_at) %></div>
+        <div class="<%= idx >= 3 ? 'on' : '' %>"><%= t('timeline.done') %><br><%= time(tx.finished_at) %></div>
       </div>
       <dl class="detail-list">
-        <dt>Plate</dt><dd><span class="plate plate-lg"><%= tx.plate %></span></dd>
-        <dt>Vehicle</dt><dd><%= tx.vehicle_type_name %><%= tx.brand_model ? ' · ' + tx.brand_model : '' %><%= tx.color ? ' · ' + tx.color : '' %></dd>
-        <dt>Customer</dt><dd><%= tx.customer_name || 'Walk-in' %><%= tx.customer_phone ? ' · ' + tx.customer_phone : '' %></dd>
-        <dt>Created</dt><dd><%= tx.created_at %> by <%= tx.cashier_name || '—' %></dd>
-        <dt>Payment</dt><dd><%= tx.payment_status === 'paid' ? `${tx.payment_method} · ${tx.paid_at}` : 'Not paid yet' %></dd>
-        <% if (tx.notes) { %><dt>Notes</dt><dd><%= tx.notes %></dd><% } %>
+        <dt><%= t('detail.plate') %></dt><dd><span class="plate plate-lg"><%= tx.plate %></span></dd>
+        <dt><%= t('detail.vehicle') %></dt><dd><%= L(tx, 'vehicle_type_name') %><%= tx.brand_model ? ' · ' + tx.brand_model : '' %><%= tx.color ? ' · ' + tx.color : '' %></dd>
+        <dt><%= t('detail.customer') %></dt><dd><%= tx.customer_name || t('ticket.walkin') %><%= tx.customer_phone ? ' · ' + tx.customer_phone : '' %></dd>
+        <dt><%= t('detail.created') %></dt><dd><%= tx.created_at %> <%= t('detail.by') %> <%= tx.cashier_name || '—' %></dd>
+        <dt><%= t('detail.payment') %></dt><dd><%= tx.payment_status === 'paid' ? `${t('method.' + tx.payment_method)} · ${tx.paid_at}` : t('detail.notPaid') %></dd>
+        <% if (tx.notes) { %><dt><%= t('detail.notes') %></dt><dd><%= tx.notes %></dd><% } %>
       </dl>
     </div>
     <% if (tx.status !== 'cancelled') { %>
     <div class="card">
-      <h2>Actions</h2>
+      <h2><%= t('detail.actions') %></h2>
       <div class="ticket-actions">
         <% if (tx.status === 'waiting') { %>
-          <form method="post" action="/app/transactions/<%= tx.id %>/status"><input type="hidden" name="action" value="start"><input type="hidden" name="back" value="detail"><button class="btn" type="submit">Start wash</button></form>
+          <form method="post" action="/app/transactions/<%= tx.id %>/status"><%- include('../partials/csrf') %><input type="hidden" name="action" value="start"><input type="hidden" name="back" value="detail"><button class="btn" type="submit"><%= t('action.start') %></button></form>
         <% } else if (tx.status === 'washing') { %>
-          <form method="post" action="/app/transactions/<%= tx.id %>/status"><input type="hidden" name="action" value="finish"><input type="hidden" name="back" value="detail"><button class="btn btn-sky" type="submit">Mark done</button></form>
+          <form method="post" action="/app/transactions/<%= tx.id %>/status"><%- include('../partials/csrf') %><input type="hidden" name="action" value="finish"><input type="hidden" name="back" value="detail"><button class="btn btn-sky" type="submit"><%= t('action.finish') %></button></form>
         <% } %>
         <% if (tx.payment_status === 'unpaid') { %>
           <form method="post" action="/app/transactions/<%= tx.id %>/pay">
+            <%- include('../partials/csrf') %>
             <input type="hidden" name="back" value="detail">
-            <select name="method" aria-label="Payment method"><% methods.forEach((m) => { %><option><%= m %></option><% }) %></select>
-            <button class="btn btn-vanilla" type="submit">Record payment</button>
+            <select name="method" aria-label="<%= t('field.paymentMethod') %>"><% methods.forEach((m) => { %><option value="<%= m %>"><%= t('method.' + m) %></option><% }) %></select>
+            <button class="btn btn-vanilla" type="submit"><%= t('action.recordPay') %></button>
           </form>
         <% } %>
         <% if (tx.payment_status === 'unpaid' && ['waiting', 'washing'].includes(tx.status)) { %>
-          <form method="post" action="/app/transactions/<%= tx.id %>/status" data-confirm="Cancel this transaction?"><input type="hidden" name="action" value="cancel"><input type="hidden" name="back" value="detail"><button class="btn btn-danger" type="submit">Cancel</button></form>
+          <form method="post" action="/app/transactions/<%= tx.id %>/status" data-confirm="<%= t('detail.confirmCancel') %>"><%- include('../partials/csrf') %><input type="hidden" name="action" value="cancel"><input type="hidden" name="back" value="detail"><button class="btn btn-danger" type="submit"><%= t('action.cancel') %></button></form>
         <% } %>
-        <% if (tx.status === 'done' && tx.payment_status === 'paid') { %><p class="muted" style="margin:0">Completed and paid — nothing left to do.</p><% } %>
+        <% if (tx.status === 'done' && tx.payment_status === 'paid') { %><p class="muted" style="margin:0"><%= t('detail.complete') %></p><% } %>
       </div>
     </div>
     <% } %>
@@ -52,17 +53,17 @@
   <div class="receipt"<%- autoPrint ? ' data-autoprint' : '' %>>
     <div class="r-head">
       <strong style="font-size:18px"><%= businessName %></strong>
-      <div class="small muted">Car &amp; motorcycle wash</div>
+      <div class="small muted"><%= t('brand.tagline') %></div>
       <div class="small" style="margin-top:8px"><%= tx.code %> · <%= tx.created_at.slice(0, 16) %></div>
     </div>
-    <div class="r-line"><span>Plate</span><strong><%= tx.plate %></strong></div>
-    <div class="r-line"><span>Vehicle</span><span><%= tx.vehicle_type_name %></span></div>
-    <div class="r-line" style="margin-top:8px"><span><%= tx.package_name %></span><span><%= rupiah(tx.package_price) %></span></div>
-    <% tx.addons.forEach((a) => { %><div class="r-line"><span>+ <%= a.name %></span><span><%= rupiah(a.price) %></span></div><% }) %>
-    <% if (tx.discount) { %><div class="r-line"><span>Discount</span><span>− <%= rupiah(tx.discount) %></span></div><% } %>
-    <div class="r-line r-total"><span>Total</span><span><%= rupiah(tx.total) %></span></div>
-    <div class="r-line"><span>Status</span><span><%= tx.payment_status === 'paid' ? `PAID · ${tx.payment_method}` : 'UNPAID' %></span></div>
-    <div class="r-foot">Thank you! Track your wash at<br><strong>/status</strong> with your plate number.</div>
+    <div class="r-line"><span><%= t('r.plate') %></span><strong><%= tx.plate %></strong></div>
+    <div class="r-line"><span><%= t('r.vehicle') %></span><span><%= L(tx, 'vehicle_type_name') %></span></div>
+    <div class="r-line" style="margin-top:8px"><span><%= L(tx, 'package_name') %></span><span><%= rupiah(tx.package_price) %></span></div>
+    <% tx.addons.forEach((a) => { %><div class="r-line"><span>+ <%= L(a) %></span><span><%= rupiah(a.price) %></span></div><% }) %>
+    <% if (tx.discount) { %><div class="r-line"><span><%= t('r.discount') %></span><span>− <%= rupiah(tx.discount) %></span></div><% } %>
+    <div class="r-line r-total"><span><%= t('r.total') %></span><span><%= rupiah(tx.total) %></span></div>
+    <div class="r-line"><span><%= t('r.status') %></span><span><%= tx.payment_status === 'paid' ? t('r.paid', { m: { key: 'method.' + tx.payment_method } }) : t('r.unpaid') %></span></div>
+    <div class="r-foot"><%= t('r.thanks') %><br><strong>/status</strong> <%= t('r.withPlate') %></div>
   </div>
 </div>
 <%- include('../partials/app-end') %>

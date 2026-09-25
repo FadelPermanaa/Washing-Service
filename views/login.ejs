@@ -11,7 +11,7 @@
   </div>
   <div class="auth-form">
     <%- include('partials/lang-switch') %>
-    <form method="post" action="/login">
+    <form method="post" action="/login"><%- include('partials/csrf') %>
       <h1><%= t('login.welcome') %></h1>
       <p class="muted"><%= t('login.lead') %></p>
       <% if (error) { %><div class="flash flash-error" role="alert"><%= error %></div><% } %>
