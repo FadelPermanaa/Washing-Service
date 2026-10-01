@@ -352,7 +352,7 @@ table.data a.row-link:hover { text-decoration: underline; }
 /* Receipt */
 .receipt { max-width: 380px; margin: 0 auto; background: var(--white); border-radius: var(--radius); padding: 28px; border: 1px solid var(--mocha-10); }
 .receipt .r-head { text-align: center; border-bottom: 1px dashed var(--mocha-20); padding-bottom: 14px; margin-bottom: 14px; }
-.receipt .r-line { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; padding: 3px 0; }
+.r-line { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; padding: 3px 0; }
 .receipt .r-total { border-top: 1px dashed var(--mocha-20); margin-top: 10px; padding-top: 10px; font-weight: 700; font-size: 18px; }
 .receipt .r-foot { text-align: center; margin-top: 16px; font-size: 13px; color: var(--mocha-60); }
 .detail-list { display: grid; grid-template-columns: 140px 1fr; gap: 10px 16px; font-size: 14px; margin: 0; }
