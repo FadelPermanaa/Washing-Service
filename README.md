@@ -54,6 +54,10 @@ A management system for a car and motorcycle wash: cashier and queue, online boo
 
 ## Run it
 
+**On Windows:** double-click `JALANKAN.bat`. It checks Node.js, installs, fills demo data the first time, starts the server and opens http://localhost:3000/login (admin / admin123).
+
+**Any system:**
+
 Requires **Node.js 22.13 or newer**. SQLite is built into Node, so there is no database server to install.
 
 ```bash
