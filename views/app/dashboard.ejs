@@ -28,7 +28,7 @@
               <td data-label="<%= t('col.plate') %>"><a class="row-link" href="/app/transactions/<%= r.id %>"><span class="plate"><%= r.plate %></span></a></td>
               <td data-label="<%= t('col.package') %>"><%= L(r, 'package_name') %><div class="small muted"><%= L(r, 'vehicle_type_name') %></div></td>
               <td data-label="<%= t('col.status') %>"><span class="badge badge-<%= r.status %>"><%= t('status.' + r.status) %></span></td>
-              <td data-label="<%= t('col.total') %>" class="num nowrap"><%= rupiah(r.total) %><div><span class="badge badge-<%= r.payment_status %>"><%= t('pay.' + r.payment_status) %></span></div></td>
+              <td data-label="<%= t('col.total') %>" class="num nowrap"><%= rupiah(r.total) %><div><span class="badge badge-<%= payState(r) %>"><%= t('pay.' + payState(r)) %></span></div></td>
             </tr>
           <% }) %>
         </tbody>

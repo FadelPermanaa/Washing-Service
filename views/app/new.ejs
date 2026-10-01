@@ -12,6 +12,11 @@
         <label for="plate"><%= t('new.plate') %></label>
         <input class="plate-input" id="plate" name="plate" type="text" value="<%= plate %>" placeholder="B 1234 XYZ" required maxlength="15" autocomplete="off" autofocus>
         <div class="vehicle-hint" id="vehicle-hint" role="status" aria-live="polite"></div>
+        <div class="perks" id="perks" hidden>
+          <label class="perk" id="perk-membership" hidden><input type="checkbox" name="use_membership" value="1" id="use_membership" checked> <span></span></label>
+          <label class="perk" id="perk-stamp" hidden><input type="checkbox" name="use_stamp" value="1" id="use_stamp"> <span></span></label>
+          <div class="stamp-card" id="stamp-card" hidden aria-hidden="true"></div>
+        </div>
       </div>
       <div class="field-row">
         <div class="field"><label for="brand_model"><%= t('new.brand') %> <span class="muted"><%= t('new.optional') %></span></label><input id="brand_model" name="brand_model" type="text" maxlength="60" placeholder="Toyota Avanza"></div>
@@ -57,10 +62,14 @@
     <h2><%= t('sum.title') %></h2>
     <div class="line"><span id="sum-package"><%= t('sum.package') %></span><span id="sum-package-price">—</span></div>
     <div class="line"><span><%= t('sum.addons') %></span><span id="sum-addons">Rp 0</span></div>
+    <div class="line" id="line-membership" hidden><span><%= t('sum.membership') %></span><span id="sum-membership"></span></div>
+    <div class="line" id="line-free" hidden><span><%= t('sum.freeWash') %></span><span id="sum-free"></span></div>
+    <div class="line" id="line-promo" hidden><span id="sum-promo-label"><%= t('sum.promo') %></span><span id="sum-promo"></span></div>
     <div class="line"><span><%= t('sum.discount') %></span><span id="sum-discount">− Rp 0</span></div>
     <div class="line total"><span><%= t('sum.total') %></span><span id="sum-total">—</span></div>
 
-    <div class="field" style="margin-top:16px"><label for="discount"><%= t('new.discount') %></label><input id="discount" name="discount" type="number" min="0" step="1000" value="0" inputmode="numeric"></div>
+    <div class="field" style="margin-top:16px"><label for="promo_code"><%= t('new.promo') %></label><input id="promo_code" name="promo_code" type="text" maxlength="20" autocomplete="off" style="text-transform:uppercase"><p class="small promo-msg" id="promo-msg" role="status" aria-live="polite"></p></div>
+    <div class="field"><label for="discount"><%= t('new.discount') %></label><input id="discount" name="discount" type="number" min="0" step="1000" value="0" inputmode="numeric"></div>
     <label class="switch"><input type="checkbox" name="pay_now" id="pay_now" value="1"> <%= t('new.paidNow') %></label>
     <div class="field" id="method-field" hidden>
       <label for="payment_method"><%= t('field.paymentMethod') %></label>
@@ -78,5 +87,5 @@
   <button class="btn btn-vanilla" type="submit" form="tx-form" tabindex="-1"><%= t('new.submit') %> <span class="arrow">→</span></button>
 </div>
 
-<script id="price-data" type="application/json"><%- JSON.stringify({ prices: priceList.prices, addons: Object.fromEntries(priceList.addons.map((a) => [a.id, a.price])) }).replace(/</g, '\\u003c') %></script>
+<script id="price-data" type="application/json"><%- JSON.stringify({ prices: priceList.prices, addons: Object.fromEntries(priceList.addons.map((a) => [a.id, a.price])), quoteUrl: '/app/api/quote' }).replace(/</g, '\\u003c') %></script>
 <%- include('../partials/app-end') %>

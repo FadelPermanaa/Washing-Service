@@ -27,7 +27,7 @@
       <dl class="detail-list">
         <dt><%= t('sum.package') %></dt><dd><%= L(tx, 'package_name') %> · <%= L(tx, 'vehicle_type_name') %></dd>
         <% if (tx.addons.length) { %><dt><%= t('sum.addons') %></dt><dd><%= tx.addons.map((a) => L(a)).join(', ') %></dd><% } %>
-        <dt><%= t('sum.total') %></dt><dd><strong><%= rupiah(tx.total) %></strong> · <span class="badge badge-<%= tx.payment_status %>"><%= t('pay.' + tx.payment_status) %></span></dd>
+        <dt><%= t('sum.total') %></dt><dd><strong><%= rupiah(tx.total) %></strong> · <span class="badge badge-<%= payState(tx) %>"><%= t('pay.' + payState(tx)) %></span></dd>
       </dl>
     </div>
     <p class="small muted"><%= t('track.autoRefresh') %></p>

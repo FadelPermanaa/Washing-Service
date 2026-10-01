@@ -242,4 +242,50 @@ router.post('/checklists/:packageId/:itemId', action((req, res) => {
   res.redirect(`/app/checklists/${pid}`);
 }, '/app/prices'));
 
+// ---------- Promo codes ----------
+
+router.get('/promos', (req, res) => {
+  res.render('app/promos', { title: req.t('promo.title'), rows: svc.listPromos() });
+});
+
+router.post('/promos', action((req, res) => {
+  const code = svc.createPromo(req.body);
+  flash(req, 'success', 'flash.promoCreated', { code });
+  res.redirect('/app/promos');
+}, '/app/promos'));
+
+router.post('/promos/:id/toggle', action((req, res) => {
+  svc.togglePromo(toInt(req.params.id));
+  res.redirect('/app/promos');
+}, '/app/promos'));
+
+// ---------- Membership plans & cancelling memberships ----------
+
+router.post('/membership-plans', action((req, res) => {
+  svc.createPlan(req.body);
+  flash(req, 'success', 'flash.saved');
+  res.redirect('/app/memberships#plans');
+}, '/app/memberships'));
+
+router.post('/membership-plans/:id/toggle', action((req, res) => {
+  svc.togglePlan(toInt(req.params.id));
+  res.redirect('/app/memberships#plans');
+}, '/app/memberships'));
+
+router.post('/memberships/:id/cancel', action((req, res) => {
+  svc.cancelMembership(toInt(req.params.id));
+  flash(req, 'success', 'flash.membershipCancelled');
+  res.redirect('/app/memberships');
+}, '/app/memberships'));
+
+// ---------- Loyalty settings ----------
+
+router.post('/settings/loyalty', action((req, res) => {
+  const every = toInt(req.body.stamp_every);
+  if (every < 0 || every > 50) throw new UserError('err.stampEvery');
+  settings.set({ stamp_every: String(every) });
+  flash(req, 'success', 'flash.saved');
+  res.redirect('/app/settings#loyalty');
+}, '/app/settings'));
+
 module.exports = router;

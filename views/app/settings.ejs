@@ -33,6 +33,14 @@
       <p class="small" style="margin:12px 0 0"><a href="/booking" target="_blank" rel="noopener"><%= t('settings.openBooking') %> ↗</a></p>
     </form>
 
+    <form class="card" id="loyalty" method="post" action="/app/settings/loyalty"><%- include('../partials/csrf') %>
+      <h2><%= t('settings.loyalty') %></h2>
+      <div class="field" style="max-width:260px"><label for="stamp_every"><%= t('settings.stampEvery') %></label><input id="stamp_every" type="number" name="stamp_every" min="0" max="50" value="<%= s.stamp_every %>"></div>
+      <p class="small muted"><%= t('settings.stampHint') %></p>
+      <button class="btn" type="submit"><%= t('prices.saveOne') %></button>
+      <p class="small" style="margin:12px 0 0"><a href="/app/promos"><%= t('nav.promos') %> →</a> · <a href="/app/memberships#plans"><%= t('mem.plans') %> →</a></p>
+    </form>
+
     <form class="card" id="business" method="post" action="/app/settings/business"><%- include('../partials/csrf') %>
       <h2><%= t('settings.business') %></h2>
       <div class="field"><label for="business_phone"><%= t('settings.businessPhone') %></label><input id="business_phone" type="tel" name="business_phone" value="<%= s.business_phone %>" placeholder="0812…" maxlength="20"></div>

@@ -45,6 +45,18 @@
   </div>
 </div>
 <div class="card" style="margin-top:18px">
+  <h2><%= t('rep.loyalty') %></h2>
+  <div class="kpis small-kpis">
+    <div class="kpi"><div class="label"><%= t('rep.membershipSales') %></div><div class="value mono"><%= rupiah(r.memberships.revenue) %></div><div class="small"><%= t('mem.soldCount', { n: r.memberships.sold }) %></div></div>
+    <div class="kpi"><div class="label"><%= t('rep.membershipWashes') %></div><div class="value mono"><%= r.loyalty.membership_washes %></div></div>
+    <div class="kpi"><div class="label"><%= t('rep.freeWashes') %></div><div class="value mono"><%= r.loyalty.free_count %></div><div class="small"><%= rupiah(r.loyalty.free_value) %></div></div>
+    <div class="kpi"><div class="label"><%= t('rep.promoDiscounts') %></div><div class="value mono"><%= rupiah(r.loyalty.promo_discount) %></div><div class="small"><%= t('rep.promoUses', { n: r.loyalty.promo_count }) %></div></div>
+  </div>
+  <% if (r.byPromo.length) { %>
+    <table class="data"><tbody><% r.byPromo.forEach((p) => { %><tr><td class="mono"><strong><%= p.code %></strong></td><td class="num"><%= p.count %>×</td><td class="num">− <%= rupiah(p.discount) %></td></tr><% }) %></tbody></table>
+  <% } %>
+</div>
+<div class="card" style="margin-top:18px">
   <h2><%= t('rep.byWasher') %></h2>
   <div class="table-wrap">
     <table class="data stack">

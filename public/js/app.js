@@ -138,8 +138,69 @@
     $('submit-btn').disabled = pkgPrice == null;
   }
 
-  form.addEventListener('change', recalc);
-  $('discount')?.addEventListener('input', recalc);
+  // Staff form: the server applies promo codes, stamp card and memberships; show its numbers.
+  let quoteTimer;
+  let quoteSeq = 0;
+  function show(id, on) { const el = $(id); if (el) el.hidden = !on; }
+  async function serverQuote() {
+    if (!data.quoteUrl) return;
+    const typeId = selected('vehicle_type_id')?.value;
+    const pkg = selected('package_id')?.value;
+    if (!typeId || !pkg) return;
+    const params = new URLSearchParams({
+      vehicle_type_id: typeId, package_id: pkg, plate: $('plate')?.value || '', discount: $('discount')?.value || '0',
+      promo_code: $('promo_code')?.value || '',
+      use_membership: $('use_membership')?.checked && !$('perk-membership').hidden ? '1' : '0',
+      use_stamp: $('use_stamp')?.checked && !$('perk-stamp').hidden ? '1' : '0',
+    });
+    form.querySelectorAll('input[name="addon_ids"]:checked').forEach((a) => params.append('addon_ids', a.value));
+    const mine = ++quoteSeq;
+    try {
+      const res = await fetch(`${data.quoteUrl}?${params}`, { headers: { Accept: 'application/json' } });
+      const q = await res.json();
+      if (mine !== quoteSeq || !q.ok) return;
+      show('line-membership', q.membershipDiscount > 0);
+      $('sum-membership').textContent = `− ${rupiah(q.membershipDiscount)}`;
+      show('line-free', q.freeDiscount > 0);
+      $('sum-free').textContent = `− ${rupiah(q.freeDiscount)}`;
+      show('line-promo', q.promoDiscount > 0);
+      $('sum-promo').textContent = `− ${rupiah(q.promoDiscount)}`;
+      if (q.promoLabel) $('sum-promo-label').textContent = q.promoLabel;
+      $('sum-discount').textContent = `− ${rupiah(q.discount)}`;
+      $('sum-total').textContent = rupiah(q.total);
+      if ($('mobile-total')) $('mobile-total').textContent = rupiah(q.total);
+      const msg = $('promo-msg');
+      if (msg) {
+        msg.textContent = q.promoError || (q.promoDiscount ? T('promoOk', '✓') : '');
+        msg.classList.toggle('bad', Boolean(q.promoError));
+      }
+      // Perks for a returning vehicle
+      const memOn = Boolean(q.membership);
+      show('perk-membership', memOn);
+      if (memOn) $('perk-membership').querySelector('span').textContent = T('useMembership', '').replace('{name}', q.membership.name).replace('{n}', q.membership.washesLeft).replace('{date}', q.membership.expiresOn);
+      const stampOn = q.stamps.available && !q.membershipDiscount;
+      show('perk-stamp', stampOn);
+      if (stampOn) $('perk-stamp').querySelector('span').textContent = T('useStamp', '').replace('{have}', q.stamps.have).replace('{every}', q.stamps.every);
+      const card = $('stamp-card');
+      if (card) {
+        const showCard = q.vehicleKnown && q.stamps.every > 0;
+        card.hidden = !showCard;
+        if (showCard) {
+          card.replaceChildren(...Array.from({ length: q.stamps.every }, (_, i) => {
+            const dot = document.createElement('i');
+            if (i < Math.min(q.stamps.have, q.stamps.every)) { dot.className = 'on'; dot.textContent = '✓'; }
+            return dot;
+          }), document.createTextNode(` ${T('stamps', '{have}/{every}').replace('{have}', q.stamps.have).replace('{every}', q.stamps.every)}`));
+        }
+      }
+      show('perks', memOn || stampOn || (q.vehicleKnown && q.stamps.every > 0));
+    } catch { /* keep the local estimate */ }
+  }
+  const requote = () => { clearTimeout(quoteTimer); quoteTimer = setTimeout(serverQuote, 250); };
+
+  form.addEventListener('change', () => { recalc(); requote(); });
+  $('discount')?.addEventListener('input', () => { recalc(); requote(); });
+  $('promo_code')?.addEventListener('input', requote);
   $('pay_now')?.addEventListener('change', (e) => { $('method-field').hidden = !e.target.checked; });
 
   // Booking: reload the free time slots when the date or package changes.
@@ -198,6 +259,7 @@
       if (!vehicle) {
         hint.className = 'vehicle-hint show';
         hint.textContent = T('newVehicle', 'New vehicle');
+        requote();
         return;
       }
       hint.className = 'vehicle-hint show';
@@ -214,6 +276,7 @@
       if (!$('customer_name').value && vehicle.customer_name) $('customer_name').value = vehicle.customer_name;
       if (!$('customer_phone').value && vehicle.customer_phone) $('customer_phone').value = vehicle.customer_phone;
       recalc();
+      requote();
     } catch { /* offline or server error: the form still works without the lookup */ }
   }
   if (plate) {
@@ -232,5 +295,6 @@
   }
 
   recalc();
+  if (data.quoteUrl) serverQuote();
   if (plate?.value && hint) lookup();
 })();

@@ -1,6 +1,6 @@
 <%- include('../partials/app-start') %>
 <div class="topbar">
-  <div><h1><%= tx.code %></h1><div class="sub"><span class="badge badge-<%= tx.status %>"><%= t('status.' + tx.status) %></span> <span class="badge badge-<%= tx.payment_status %>"><%= t('pay.' + tx.payment_status) %></span></div></div>
+  <div><h1><%= tx.code %></h1><div class="sub"><span class="badge badge-<%= tx.status %>"><%= t('status.' + tx.status) %></span> <span class="badge badge-<%= payState(tx) %>"><%= t('pay.' + payState(tx)) %></span></div></div>
   <div class="actions">
     <a class="btn btn-ghost" href="/app/transactions"><%= t('detail.back') %></a>
     <button class="btn" type="button" data-print><%- include('../partials/icon', { name: 'print' }) %> <%= t('detail.print') %></button>
@@ -22,7 +22,10 @@
         <dt><%= t('detail.created') %></dt><dd><%= tx.created_at %> <%= t('detail.by') %> <%= tx.cashier_name || '—' %></dd>
         <% if (tx.washer_name) { %><dt><%= t('work.washer') %></dt><dd><%= tx.washer_name %><%= tx.status === 'done' ? ' · ' + t('work.commission') + ' ' + rupiah(tx.commission) : '' %></dd><% } %>
         <% if (tx.bay_name) { %><dt><%= t('work.bay') %></dt><dd><%= tx.bay_name %></dd><% } %>
-        <dt><%= t('detail.payment') %></dt><dd><%= tx.payment_status === 'paid' ? `${t('method.' + tx.payment_method)} · ${tx.paid_at}` : t('detail.notPaid') %></dd>
+        <dt><%= t('detail.payment') %></dt><dd><% if (tx.payment_status === 'paid' && !tx.payments.length) { %><%= t('detail.nothingToPay') %><% } else if (!tx.payments.length) { %><%= t('detail.notPaid') %><% } else { %><% tx.payments.forEach((p) => { %><div><strong><%= rupiah(p.amount) %></strong> · <%= t('method.' + p.method) %> · <span class="small muted"><%= p.created_at.slice(0, 16) %><%= p.created_by_name ? ' · ' + p.created_by_name : '' %></span></div><% }) %><% if (tx.due > 0) { %><div class="small" style="color:var(--danger)"><%= t('detail.due', { due: rupiah(tx.due) }) %></div><% } %><% } %></dd>
+        <% if (tx.promo_code) { %><dt><%= t('sum.promo') %></dt><dd><%= tx.promo_code %> · − <%= rupiah(tx.promo_discount) %></dd><% } %>
+        <% if (tx.free_discount) { %><dt><%= t('sum.freeWash') %></dt><dd><%= t('detail.stampsUsed', { n: tx.stamps_used }) %></dd><% } %>
+        <% if (tx.membership_id) { %><dt><%= t('sum.membership') %></dt><dd><a href="/app/memberships?q=<%= encodeURIComponent(tx.plate) %>"><%= t('detail.membershipUsed') %></a></dd><% } %>
         <% if (tx.notes) { %><dt><%= t('detail.notes') %></dt><dd><%= tx.notes %></dd><% } %>
         <% if (tx.booking_id) { %><dt><%= t('nav.bookings') %></dt><dd><%= t('detail.fromBooking') %></dd><% } %>
         <dt><%= t('track.link') %></dt><dd><a href="/t/<%= tx.token %>" target="_blank" rel="noopener"><%= t('track.open') %> ↗</a> <button type="button" class="btn btn-sm btn-ghost" data-copy="<%= baseUrl %>/t/<%= tx.token %>" data-copied="<%= t('track.copied') %>"><%= t('track.copy') %></button></dd>
@@ -54,14 +57,16 @@
           <form method="post" action="/app/transactions/<%= tx.id %>/status"><%- include('../partials/csrf') %><input type="hidden" name="action" value="finish"><input type="hidden" name="back" value="detail"><button class="btn btn-sky" type="submit"><%= t('action.finish') %></button></form>
         <% } %>
         <% if (tx.payment_status === 'unpaid') { %>
-          <form method="post" action="/app/transactions/<%= tx.id %>/pay">
+          <form class="pay-form" method="post" action="/app/transactions/<%= tx.id %>/payments">
             <%- include('../partials/csrf') %>
-            <input type="hidden" name="back" value="detail">
+            <label class="sr-only" for="pay-amount"><%= t('detail.amount') %></label>
+            <input id="pay-amount" class="price-input" type="number" name="amount" min="1" max="<%= tx.due %>" step="500" value="<%= tx.due %>" inputmode="numeric">
             <select name="method" aria-label="<%= t('field.paymentMethod') %>"><% methods.forEach((m) => { %><option value="<%= m %>"><%= t('method.' + m) %></option><% }) %></select>
             <button class="btn btn-vanilla" type="submit"><%= t('action.recordPay') %></button>
           </form>
+          <p class="small muted" style="flex-basis:100%;margin:0"><%= t('detail.partHint') %></p>
         <% } %>
-        <% if (tx.payment_status === 'unpaid' && ['waiting', 'washing'].includes(tx.status)) { %>
+        <% if (tx.payment_status === 'unpaid' && !tx.paid && ['waiting', 'washing'].includes(tx.status)) { %>
           <form method="post" action="/app/transactions/<%= tx.id %>/status" data-confirm="<%= t('detail.confirmCancel') %>"><%- include('../partials/csrf') %><input type="hidden" name="action" value="cancel"><input type="hidden" name="back" value="detail"><button class="btn btn-danger" type="submit"><%= t('action.cancel') %></button></form>
         <% } %>
         <% if (tx.status === 'done' && tx.payment_status === 'paid') { %><p class="muted" style="margin:0"><%= t('detail.complete') %></p><% } %>
@@ -80,9 +85,14 @@
     <div class="r-line"><span><%= t('r.vehicle') %></span><span><%= L(tx, 'vehicle_type_name') %></span></div>
     <div class="r-line" style="margin-top:8px"><span><%= L(tx, 'package_name') %></span><span><%= rupiah(tx.package_price) %></span></div>
     <% tx.addons.forEach((a) => { %><div class="r-line"><span>+ <%= L(a) %></span><span><%= rupiah(a.price) %></span></div><% }) %>
+    <% if (tx.membership_discount) { %><div class="r-line"><span><%= t('sum.membership') %></span><span>− <%= rupiah(tx.membership_discount) %></span></div><% } %>
+    <% if (tx.free_discount) { %><div class="r-line"><span><%= t('sum.freeWash') %></span><span>− <%= rupiah(tx.free_discount) %></span></div><% } %>
+    <% if (tx.promo_discount) { %><div class="r-line"><span><%= t('sum.promo') %> <%= tx.promo_code %></span><span>− <%= rupiah(tx.promo_discount) %></span></div><% } %>
     <% if (tx.discount) { %><div class="r-line"><span><%= t('r.discount') %></span><span>− <%= rupiah(tx.discount) %></span></div><% } %>
     <div class="r-line r-total"><span><%= t('r.total') %></span><span><%= rupiah(tx.total) %></span></div>
-    <div class="r-line"><span><%= t('r.status') %></span><span><%= tx.payment_status === 'paid' ? t('r.paid', { m: { key: 'method.' + tx.payment_method } }) : t('r.unpaid') %></span></div>
+    <% tx.payments.forEach((p) => { %><div class="r-line"><span><%= t('method.' + p.method) %></span><span><%= rupiah(p.amount) %></span></div><% }) %>
+    <div class="r-line"><span><%= t('r.status') %></span><span><%= tx.payment_status === 'paid' ? t('r.paidShort') : (tx.paid ? t('r.due', { due: rupiah(tx.due) }) : t('r.unpaid')) %></span></div>
+    <% if (tx.stamp_earned && shop.stamp_every !== '0') { %><div class="r-line small"><span><%= t('r.stamp') %></span><span>+1</span></div><% } %>
     <div class="r-foot"><%= t('r.thanks') %><br><strong class="track-url"><%= baseUrl %>/t/<%= tx.token %></strong></div>
   </div>
 </div>

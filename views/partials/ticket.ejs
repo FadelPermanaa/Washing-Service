@@ -2,7 +2,7 @@
 <div class="ticket">
   <div class="ticket-top">
     <span class="plate"><%= t.plate %></span>
-    <span class="badge badge-<%= t.payment_status %>"><%= tr('pay.' + t.payment_status) %></span>
+    <span class="badge badge-<%= payState(t) %>"><%= tr('pay.' + payState(t)) %></span>
   </div>
   <div class="meta">
     <b><%= L(t, 'package_name') %></b> · <%= L(t, 'vehicle_type_name') %><br>

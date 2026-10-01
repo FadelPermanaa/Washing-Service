@@ -45,6 +45,8 @@ app.use((req, res, next) => {
   res.locals.businessName = BUSINESS_NAME;
   res.locals.rupiah = rupiah;
   res.locals.time = (ts) => (ts ? ts.slice(11, 16) : '—');
+  // 'paid' | 'partial' | 'unpaid' for badges (partial = some money received, not all)
+  res.locals.payState = (t) => (t.payment_status === 'paid' ? 'paid' : (t.paid_amount > 0 || t.paid > 0 ? 'partial' : 'unpaid'));
   res.locals.shop = settings.all();
   res.locals.baseUrl = process.env.PUBLIC_URL || res.locals.shop.public_url || `${req.protocol}://${req.get('host')}`;
   notifications.rememberBaseUrl(res.locals.baseUrl);
@@ -62,7 +64,7 @@ staff.use(requireLogin);
 staff.get('/', (req, res, next) => (req.session.user.role === 'washer' ? res.redirect('/app/jobs') : next()));
 staff.use('/jobs', requireRole('washer', 'cashier'));
 staff.use(require('./routes/jobs'));
-staff.use(['/prices', '/catalog', '/users', '/settings', '/checklists', '/bays'], requireAdmin);
+staff.use(['/prices', '/catalog', '/users', '/settings', '/checklists', '/bays', '/promos', '/membership-plans', '/memberships/:id/cancel'], requireAdmin);
 staff.use(require('./routes/admin'));
 staff.use(requireRole('cashier'), require('./routes/staff'));
 app.use('/app', staff);

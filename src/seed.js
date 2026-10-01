@@ -83,6 +83,17 @@ tx(() => {
   }
 });
 
+// Promo code, a membership plan and a few memberships.
+try { svc.createPromo({ code: 'HEMAT20', type: 'percent', value: 20, description: 'Diskon 20% pelanggan baru' }); } catch { /* exists */ }
+if (!db.prepare('SELECT 1 FROM membership_plans').get()) {
+  const full = packages.find((p) => p.name === 'Full Wash') || packages[0];
+  svc.createPlan({ name: 'Full Wash 8x / month', name_id: 'Cuci Luar Dalam 8x / bulan', package_id: full.id, washes: 8, valid_days: 30, price: 340000 });
+}
+const plan = db.prepare('SELECT * FROM membership_plans ORDER BY id LIMIT 1').get();
+pool.slice(0, 3).forEach((v) => {
+  try { svc.sellMembership({ plate: v.plate, plan_id: plan.id, method: 'QRIS' }, admin.id); } catch { /* plan type mismatch */ }
+});
+
 // A few online bookings for today and the next days.
 let bookingsMade = 0;
 for (const [offset, time, name, plate, pkgIdx] of [

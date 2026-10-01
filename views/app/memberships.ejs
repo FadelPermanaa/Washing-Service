@@ -1,0 +1,88 @@
+<%- include('../partials/app-start') %>
+<% const isAdmin = user.role === 'admin'; const todayStr = today;
+   const state = (m) => m.status === 'cancelled' ? 'cancelled' : (m.washes_left <= 0 ? 'used' : (m.expires_on < todayStr ? 'expired' : 'active')); %>
+<div class="topbar">
+  <div><h1><%= t('mem.title') %></h1><div class="sub"><%= t('mem.sub') %></div></div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <form class="filters" method="get">
+      <input type="search" name="q" value="<%= q %>" placeholder="<%= t('mem.searchPh') %>" aria-label="<%= t('btn.search') %>">
+      <button class="btn" type="submit"><%= t('btn.search') %></button>
+    </form>
+    <div class="table-wrap">
+      <table class="data stack">
+        <thead><tr><th><%= t('col.plate') %></th><th><%= t('mem.plan') %></th><th class="num"><%= t('mem.left') %></th><th><%= t('mem.expires') %></th><th><%= t('col.status') %></th><% if (isAdmin) { %><th></th><% } %></tr></thead>
+        <tbody>
+          <% if (!rows.length) { %><tr><td colspan="6" class="empty"><%= t('mem.none') %></td></tr><% } %>
+          <% rows.forEach((m) => { const st = state(m); %>
+            <tr class="<%= st === 'active' ? '' : 'inactive' %>">
+              <td data-label="<%= t('col.plate') %>"><span class="plate"><%= m.plate %></span><% if (m.customer_name) { %><div class="small muted"><%= m.customer_name %></div><% } %></td>
+              <td data-label="<%= t('mem.plan') %>"><strong><%= L(m, 'plan_name') %></strong><div class="small muted"><%= L(m, 'package_name') %> · <%= rupiah(m.price) %></div></td>
+              <td data-label="<%= t('mem.left') %>" class="num"><strong><%= m.washes_left %></strong>/<%= m.washes_total %></td>
+              <td data-label="<%= t('mem.expires') %>" class="mono nowrap"><%= m.expires_on %></td>
+              <td data-label="<%= t('col.status') %>"><span class="badge mem-<%= st %>"><%= t('mem.state.' + st) %></span></td>
+              <% if (isAdmin) { %><td data-label="" class="num"><% if (st === 'active') { %><form method="post" action="/app/memberships/<%= m.id %>/cancel" data-confirm="<%= t('mem.cancelConfirm') %>"><%- include('../partials/csrf') %><button class="btn btn-sm btn-danger" type="submit"><%= t('action.cancel') %></button></form><% } %></td><% } %>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <form class="card" method="post" action="/app/memberships"><%- include('../partials/csrf') %>
+      <h2><%= t('mem.sell') %></h2>
+      <% if (!plans.length) { %>
+        <p class="muted"><%= isAdmin ? t('mem.noPlansAdmin') : t('mem.noPlans') %></p>
+      <% } else { %>
+        <div class="field"><label for="m-plate"><%= t('new.plate') %></label><input class="plate-input" id="m-plate" name="plate" type="text" value="<%= plate %>" required maxlength="15" placeholder="B 1234 XYZ" autocomplete="off"></div>
+        <div class="field"><label for="m-plan"><%= t('mem.plan') %></label>
+          <select id="m-plan" name="plan_id" required>
+            <% plans.forEach((p) => { %><option value="<%= p.id %>"><%= L(p) %> — <%= p.washes %>× <%= L(p, 'package_name') %><%= p.vehicle_type_id ? ' · ' + L(p, 'type_name') : '' %> · <%= rupiah(p.price) %></option><% }) %>
+          </select>
+        </div>
+        <div class="field"><label for="m-type"><%= t('new.step2') %> <span class="muted"><%= t('mem.typeHint') %></span></label>
+          <select id="m-type" name="vehicle_type_id"><option value=""><%= t('mem.typeAuto') %></option><% priceList.types.forEach((vt) => { %><option value="<%= vt.id %>"><%= L(vt) %></option><% }) %></select>
+        </div>
+        <div class="field-row">
+          <div class="field"><label for="m-name"><%= t('new.customer') %></label><input id="m-name" name="customer_name" type="text" maxlength="80"></div>
+          <div class="field"><label for="m-phone"><%= t('new.phone') %></label><input id="m-phone" name="customer_phone" type="tel" maxlength="20" placeholder="08xx"></div>
+        </div>
+        <div class="field"><label for="m-method"><%= t('field.paymentMethod') %></label><select id="m-method" name="method"><% methods.forEach((m) => { %><option value="<%= m %>"><%= t('method.' + m) %></option><% }) %></select></div>
+        <button class="btn btn-block" type="submit"><%= t('mem.sellBtn') %></button>
+      <% } %>
+    </form>
+
+    <% if (isAdmin) { %>
+    <div class="card" id="plans">
+      <h2><%= t('mem.plans') %></h2>
+      <div class="list-rows">
+        <% allPlans.forEach((p) => { %>
+          <div class="list-row<%= p.active ? '' : ' inactive' %>">
+            <div class="grow"><strong><%= L(p) %></strong><div class="small muted"><%= p.washes %>× <%= L(p, 'package_name') %><%= p.vehicle_type_id ? ' · ' + L(p, 'type_name') : '' %> · <%= t('mem.validDays', { n: p.valid_days }) %> · <%= rupiah(p.price) %> · <%= t('mem.soldCount', { n: p.sold }) %></div></div>
+            <form method="post" action="/app/membership-plans/<%= p.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= p.active ? t('prices.hide') : t('prices.show') %></button></form>
+          </div>
+        <% }) %>
+      </div>
+      <form class="add-form" method="post" action="/app/membership-plans"><%- include('../partials/csrf') %>
+        <div class="field-row">
+          <input type="text" name="name" placeholder="<%= t('prices.nameEn') %>" required maxlength="60" aria-label="<%= t('prices.nameEn') %>">
+          <input type="text" name="name_id" placeholder="<%= t('prices.nameId') %>" maxlength="60" aria-label="<%= t('prices.nameId') %>">
+        </div>
+        <div class="field-row">
+          <select name="package_id" aria-label="<%= t('col.package') %>" required><% priceList.packages.forEach((p) => { %><option value="<%= p.id %>"><%= L(p) %></option><% }) %></select>
+          <select name="vehicle_type_id" aria-label="<%= t('new.step2') %>"><option value=""><%= t('mem.anyType') %></option><% priceList.types.forEach((vt) => { %><option value="<%= vt.id %>"><%= L(vt) %></option><% }) %></select>
+        </div>
+        <div class="field-row three">
+          <label class="mini"><span><%= t('mem.washes') %></span><input type="number" name="washes" min="1" max="100" value="8" required></label>
+          <label class="mini"><span><%= t('mem.days') %></span><input type="number" name="valid_days" min="1" max="730" value="30" required></label>
+          <label class="mini"><span><%= t('prices.price') %> (Rp)</span><input type="number" name="price" min="0" step="1000" required></label>
+        </div>
+        <button class="btn" type="submit"><%= t('mem.addPlan') %></button>
+      </form>
+    </div>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/app-end') %>

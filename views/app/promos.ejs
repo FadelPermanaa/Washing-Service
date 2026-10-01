@@ -1,0 +1,44 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div><h1><%= t('promo.title') %></h1><div class="sub"><%= t('promo.sub') %></div></div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="table-wrap">
+      <table class="data stack">
+        <thead><tr><th><%= t('promo.code') %></th><th><%= t('promo.value') %></th><th><%= t('promo.rules') %></th><th class="num"><%= t('promo.used') %></th><th></th></tr></thead>
+        <tbody>
+          <% if (!rows.length) { %><tr><td colspan="5" class="empty"><%= t('promo.none') %></td></tr><% } %>
+          <% rows.forEach((p) => { %>
+            <tr class="<%= p.active ? '' : 'inactive' %>">
+              <td data-label="<%= t('promo.code') %>"><strong class="mono"><%= p.code %></strong><% if (p.description) { %><div class="small muted"><%= p.description %></div><% } %></td>
+              <td data-label="<%= t('promo.value') %>" class="nowrap"><%= p.type === 'percent' ? p.value + '%' : rupiah(p.value) %></td>
+              <td data-label="<%= t('promo.rules') %>" class="small"><%= [p.min_spend ? t('promo.minSpend', { v: rupiah(p.min_spend) }) : '', p.starts_on || p.ends_on ? (p.starts_on || '…') + ' → ' + (p.ends_on || '…') : '', p.max_uses ? t('promo.maxUses', { n: p.max_uses }) : ''].filter(Boolean).join(' · ') || '—' %></td>
+              <td data-label="<%= t('promo.used') %>" class="num"><%= p.used %></td>
+              <td data-label="" class="num"><form method="post" action="/app/promos/<%= p.id %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= p.active ? t('promo.disable') : t('promo.enable') %></button></form></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <form class="card" method="post" action="/app/promos"><%- include('../partials/csrf') %>
+    <h2><%= t('promo.add') %></h2>
+    <div class="field"><label for="p-code"><%= t('promo.code') %></label><input id="p-code" name="code" type="text" required maxlength="20" pattern="[A-Za-z0-9_\-]{3,20}" placeholder="HEMAT20" style="text-transform:uppercase"></div>
+    <div class="field"><label for="p-desc"><%= t('promo.description') %> <span class="muted"><%= t('new.optional') %></span></label><input id="p-desc" name="description" type="text" maxlength="120"></div>
+    <div class="field-row">
+      <div class="field"><label for="p-type"><%= t('promo.type') %></label><select id="p-type" name="type"><option value="percent"><%= t('promo.percent') %></option><option value="fixed"><%= t('promo.fixed') %></option></select></div>
+      <div class="field"><label for="p-value"><%= t('promo.value') %></label><input id="p-value" name="value" type="number" min="1" required></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label for="p-min"><%= t('promo.minSpendLabel') %></label><input id="p-min" name="min_spend" type="number" min="0" step="1000" value="0"></div>
+      <div class="field"><label for="p-max"><%= t('promo.maxUsesLabel') %></label><input id="p-max" name="max_uses" type="number" min="0" placeholder="∞"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label for="p-start"><%= t('promo.starts') %></label><input id="p-start" name="starts_on" type="date"></div>
+      <div class="field"><label for="p-end"><%= t('promo.ends') %></label><input id="p-end" name="ends_on" type="date"></div>
+    </div>
+    <button class="btn btn-block" type="submit"><%= t('promo.create') %></button>
+  </form>
+</div>
+<%- include('../partials/app-end') %>

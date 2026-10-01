@@ -40,7 +40,31 @@ router.post('/transactions', action((req, res) => {
 }, '/app/transactions/new'));
 
 router.get('/api/vehicle', (req, res) => {
-  res.json({ vehicle: svc.findVehicleByPlate(req.query.plate) });
+  const v = svc.findVehicleByPlate(req.query.plate);
+  res.json({ vehicle: v && { ...v, stamp: svc.stampStatus(v), memberships: svc.activeMemberships(v.id) } });
+});
+
+/** Live price preview for the new-wash form (same rules as saving). */
+router.get('/api/quote', (req, res) => {
+  const q = req.query;
+  try {
+    const r = svc.quote({
+      vehicleTypeId: svc.toInt(q.vehicle_type_id), packageId: svc.toInt(q.package_id), addonIds: [].concat(q.addon_ids || []),
+      discount: q.discount, promoCode: q.promo_code, useStamp: q.use_stamp === '1', useMembership: q.use_membership === '1', plate: q.plate,
+    }, { soft: true });
+    res.json({
+      ok: true,
+      packageName: res.locals.L(r.pkg), packagePrice: r.packagePrice, addonsTotal: r.addonsTotal,
+      membershipDiscount: r.membershipDiscount, freeDiscount: r.freeDiscount, promoDiscount: r.promoDiscount, discount: r.discount, total: r.total,
+      promoError: r.promoError ? req.t(r.promoError.key, r.promoError.params) : null,
+      promoLabel: r.promo ? `${r.promo.code}${r.promo.type === 'percent' ? ` (${r.promo.value}%)` : ''}` : null,
+      stamps: r.stamps, vehicleKnown: Boolean(r.vehicle),
+      membership: r.membership && { id: r.membership.id, washesLeft: r.membership.washes_left, expiresOn: r.membership.expires_on, name: res.locals.L(r.membership, 'plan_name') },
+    });
+  } catch (err) {
+    if (!(err instanceof svc.UserError)) throw err;
+    res.json({ ok: false, error: req.t(err.key, err.params) });
+  }
 });
 
 router.get('/transactions', (req, res) => {
@@ -65,6 +89,12 @@ router.post('/transactions/:id/status', action((req, res) => {
   svc.changeStatus(svc.toInt(req.params.id), String(req.body.action), { washerId: req.body.washer_id, bayId: req.body.bay_id });
   flash(req, 'success', `flash.${req.body.action}`);
   res.redirect(req.body.back === 'detail' ? `/app/transactions/${req.params.id}` : '/app/queue');
+}, '/app/queue'));
+
+router.post('/transactions/:id/payments', action((req, res) => {
+  const r = svc.recordPayment(svc.toInt(req.params.id), { amount: req.body.amount, method: String(req.body.method) }, req.session.user.id);
+  flash(req, 'success', r.due > 0 ? 'flash.partPaid' : 'flash.paid', { due: res.locals.rupiah(r.due) });
+  res.redirect(`/app/transactions/${req.params.id}`);
 }, '/app/queue'));
 
 router.post('/transactions/:id/pay', action((req, res) => {
@@ -117,5 +147,23 @@ router.post('/whatsapp/:id', action((req, res) => {
   if (req.get('accept')?.includes('application/json')) return res.json({ ok: true });
   res.redirect(req.body.back || '/app/whatsapp');
 }, '/app/whatsapp'));
+
+// ---------- Memberships (selling is a cashier job; plans are set up by admins) ----------
+
+router.get('/memberships', (req, res) => {
+  const q = String(req.query.q || '').slice(0, 50);
+  res.render('app/memberships', {
+    title: req.t('mem.title'), q, rows: svc.listMemberships(q), plans: svc.listPlans({ activeOnly: true }),
+    allPlans: req.session.user.role === 'admin' ? svc.listPlans() : [], priceList: svc.getPriceList(), methods: svc.PAYMENT_METHODS,
+    today: today(),
+    plate: svc.normalizePlate(req.query.plate),
+  });
+});
+
+router.post('/memberships', action((req, res) => {
+  svc.sellMembership(req.body, req.session.user.id);
+  flash(req, 'success', 'flash.membershipSold', { plate: svc.normalizePlate(req.body.plate) });
+  res.redirect('/app/memberships');
+}, '/app/memberships'));
 
 module.exports = router;
