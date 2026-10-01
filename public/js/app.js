@@ -83,6 +83,46 @@
     });
   });
 
+  // Photos: pick or take a picture -> shrink it in the browser -> upload -> reload. Plain form post without JS.
+  async function shrink(file, max = 1600, quality = 0.85) {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || !window.createImageBitmap) return file;
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      if (scale === 1 && file.size < 1.5 * 1024 * 1024) return file;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bmp.width * scale);
+      canvas.height = Math.round(bmp.height * scale);
+      canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', quality));
+      return blob ? new File([blob], 'photo.jpg', { type: 'image/jpeg' }) : file;
+    } catch { return file; }
+  }
+  document.querySelectorAll('form[data-photo-upload]').forEach((f) => {
+    const input = f.querySelector('input[type=file]');
+    input.addEventListener('change', async () => {
+      if (!input.files.length) return;
+      f.classList.add('busy');
+      const label = f.querySelector('[data-label]');
+      if (label) label.textContent = '…';
+      try {
+        const body = new FormData();
+        for (const el of f.querySelectorAll('input[type=hidden]')) body.append(el.name, el.value);
+        for (const file of input.files) body.append('photos', await shrink(file));
+        const res = await fetch(f.action, { method: 'POST', body, headers: { Accept: 'application/json' } });
+        if (res.ok && (res.headers.get('content-type') || '').includes('json')) { location.reload(); return; }
+        f.submit();
+      } catch { f.submit(); }
+    });
+  });
+
+  // Stock: cost + "record as expense" only make sense for purchases.
+  document.querySelectorAll('[data-move-type]').forEach((sel) => {
+    const sync = () => sel.form.querySelectorAll('[data-purchase-only]').forEach((el) => { el.hidden = sel.value !== 'purchase'; });
+    sel.addEventListener('change', sync);
+    sync();
+  });
+
   // Copy-to-clipboard buttons
   document.querySelectorAll('[data-copy]').forEach((btn) => {
     btn.addEventListener('click', async () => {

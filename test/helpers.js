@@ -68,6 +68,15 @@ class Client {
 
   get(url) { return this.request('GET', url); }
 
+  /** Multipart upload like a browser form: fields + files [{ name, filename, type, data: Buffer }]. */
+  upload(url, fields = {}, files = [], headers = {}) {
+    const fd = new FormData();
+    if (!('_csrf' in fields) && this.csrf) fd.append('_csrf', this.csrf);
+    for (const [k, v] of Object.entries(fields)) fd.append(k, String(v));
+    for (const f of files) fd.append(f.name, new Blob([f.data], { type: f.type }), f.filename);
+    return this.request('POST', url, { body: fd, headers });
+  }
+
   post(url, form = {}) { return this.request('POST', url, { form }); }
 
   /** Follow a redirect after a POST and return the page (so its flash message can be read). */

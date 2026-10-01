@@ -1,0 +1,67 @@
+<%- include('../partials/app-start') %>
+<% const qty = (n) => Number(n).toLocaleString(locale, { maximumFractionDigits: 3 }); %>
+<div class="topbar">
+  <div><h1><%= t('stock.title') %></h1><div class="sub"><%= t('stock.sub') %></div></div>
+</div>
+<div class="grid-2">
+  <div>
+    <% if (!supplies.length) { %><div class="card empty"><%= t('stock.none') %></div><% } %>
+    <% supplies.forEach((s) => { %>
+      <section class="card supply<%= s.active ? '' : ' inactive' %><%= s.low ? ' supply-low' : '' %>" id="supply-<%= s.id %>">
+        <div class="card-head">
+          <div>
+            <h2 style="margin:0"><%= L(s) %></h2>
+            <div class="small muted"><%= s.name_id && lang === 'id' ? s.name : (s.name_id || '') %></div>
+          </div>
+          <div class="stock-level">
+            <strong class="mono"><%= qty(s.stock) %></strong> <span class="muted"><%= s.unit %></span>
+            <% if (s.low) { %><span class="badge badge-unpaid"><%= t('stock.low') %></span><% } %>
+          </div>
+        </div>
+        <div class="meter"><i style="width:<%= s.min_stock > 0 ? Math.min(100, Math.round(s.stock / (s.min_stock * 3) * 100)) : 100 %>%;background:<%= s.low ? 'var(--danger)' : 'var(--ok)' %>"></i></div>
+        <p class="small muted" style="margin:8px 0 12px">
+          <%= t('stock.minLabel', { n: qty(s.min_stock), unit: s.unit }) %>
+          <% if (s.usage_per_wash > 0) { %> · <%= t('stock.autoUse', { n: qty(s.usage_per_wash), unit: s.unit, pkg: s.usage_package_id ? L(s, 'usage_package_name') : t('stock.allPackages') }) %><% } %>
+        </p>
+        <% if (s.active) { %>
+        <form class="stock-move" method="post" action="/app/stock/<%= s.id %>/move"><%- include('../partials/csrf') %>
+          <select name="type" aria-label="<%= t('stock.moveType') %>" data-move-type>
+            <option value="purchase"><%= t('stock.purchase') %></option>
+            <option value="usage"><%= t('stock.usage') %></option>
+            <option value="adjust"><%= t('stock.adjust') %></option>
+          </select>
+          <input class="price-input" type="text" inputmode="decimal" name="qty" placeholder="<%= t('stock.qty') %> (<%= s.unit %>)" aria-label="<%= t('stock.qty') %>" required>
+          <input class="price-input" type="number" name="cost" min="0" step="500" placeholder="<%= t('stock.cost') %>" aria-label="<%= t('stock.cost') %>" data-purchase-only>
+          <label class="small inline-check" data-purchase-only><input type="checkbox" name="record_expense" value="1" checked> <%= t('stock.recordExpense') %></label>
+          <input type="text" name="note" maxlength="120" placeholder="<%= t('new.notes') %>" aria-label="<%= t('new.notes') %>" style="flex:1;min-width:140px">
+          <button class="btn btn-sm" type="submit"><%= t('prices.saveOne') %></button>
+        </form>
+        <% } %>
+        <% if (moves[s.id].length) { %>
+          <details class="names-edit"><summary><%= t('stock.history') %></summary>
+            <table class="data" style="margin-top:8px"><tbody>
+              <% moves[s.id].forEach((m) => { %>
+                <tr><td class="mono small nowrap"><%= m.created_at.slice(0, 16) %></td><td><%= t('stock.reason.' + m.reason) %><%= m.tx_code ? ' · ' + m.tx_code : '' %><%= m.note ? ' · ' + m.note : '' %></td><td class="num mono nowrap" style="color:<%= m.qty < 0 ? 'var(--danger)' : 'var(--ok)' %>"><%= m.qty > 0 ? '+' : '' %><%= qty(m.qty) %></td></tr>
+              <% }) %>
+            </tbody></table>
+          </details>
+        <% } %>
+        <details class="names-edit"><summary><%= t('stock.edit') %></summary>
+          <form method="post" action="/app/stock/<%= s.id %>" class="user-edit"><%- include('../partials/csrf') %>
+            <%- include('../partials/supply-fields', { s }) %>
+            <div class="actions-row"><button class="btn btn-sm" type="submit"><%= t('prices.saveOne') %></button></div>
+          </form>
+          <form method="post" action="/app/stock/<%= s.id %>/toggle" style="margin-top:8px"><%- include('../partials/csrf') %><button class="btn btn-sm btn-ghost" type="submit"><%= s.active ? t('prices.hide') : t('prices.show') %></button></form>
+        </details>
+      </section>
+    <% }) %>
+  </div>
+  <form class="card" method="post" action="/app/stock"><%- include('../partials/csrf') %>
+    <h2><%= t('stock.add') %></h2>
+    <%- include('../partials/supply-fields', { s: null }) %>
+    <div class="field"><label for="s-stock"><%= t('stock.opening') %></label><input id="s-stock" type="text" inputmode="decimal" name="stock" value="0"></div>
+    <button class="btn btn-block" type="submit"><%= t('stock.addBtn') %></button>
+    <p class="small muted" style="margin:12px 0 0"><%= t('stock.hint') %></p>
+  </form>
+</div>
+<%- include('../partials/app-end') %>

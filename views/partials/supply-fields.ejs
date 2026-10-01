@@ -1,0 +1,15 @@
+<%# Fields for creating / editing a supply. Locals: s (supply or null), priceList %>
+<div class="field-row">
+  <div class="field"><label><%= t('prices.nameEn') %></label><input type="text" name="name" value="<%= s ? s.name : '' %>" required maxlength="60" placeholder="Car shampoo"></div>
+  <div class="field"><label><%= t('prices.nameId') %></label><input type="text" name="name_id" value="<%= s ? s.name_id || '' : '' %>" maxlength="60" placeholder="Sampo mobil"></div>
+</div>
+<div class="field-row">
+  <div class="field"><label><%= t('stock.unit') %></label><input type="text" name="unit" value="<%= s ? s.unit : '' %>" maxlength="12" placeholder="liter / pcs / botol"></div>
+  <div class="field"><label><%= t('stock.min') %></label><input type="text" inputmode="decimal" name="min_stock" value="<%= s ? s.min_stock : 0 %>"></div>
+</div>
+<div class="field-row">
+  <div class="field"><label><%= t('stock.perWash') %></label><input type="text" inputmode="decimal" name="usage_per_wash" value="<%= s ? s.usage_per_wash : 0 %>"></div>
+  <div class="field"><label><%= t('stock.forPackage') %></label>
+    <select name="usage_package_id"><option value=""><%= t('stock.allPackages') %></option><% priceList.packages.forEach((p) => { %><option value="<%= p.id %>"<%= s && s.usage_package_id === p.id ? ' selected' : '' %>><%= L(p) %></option><% }) %></select>
+  </div>
+</div>

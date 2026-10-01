@@ -12,6 +12,7 @@ router.get('/', (req, res) => {
     queue: svc.queue(),
     recent: svc.listTransactions({ date: today() }).slice(0, 8),
     bookings: svc.upcomingToday(),
+    lowStock: req.session.user.role === 'admin' ? svc.lowStock() : [],
   });
 });
 
@@ -82,6 +83,7 @@ router.get('/transactions/:id', (req, res) => {
   res.render('app/transaction', {
     title: t.code, tx: t, methods: svc.PAYMENT_METHODS, autoPrint: req.query.print === '1',
     washers: svc.listWashers(), bays: svc.listBays(), messages: svc.notifications.forTransaction(t.id),
+    photos: svc.listPhotos(t.id),
   });
 });
 

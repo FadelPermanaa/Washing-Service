@@ -6,7 +6,8 @@ const { requireLogin, requireRole, requireAdmin } = require('./auth');
 const { i18nMiddleware } = require('./i18n');
 const { csrf } = require('./security');
 const settings = require('./settings');
-const { notifications } = require('./services');
+const services = require('./services');
+const { notifications } = services;
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -51,9 +52,12 @@ app.use((req, res, next) => {
   res.locals.baseUrl = process.env.PUBLIC_URL || res.locals.shop.public_url || `${req.protocol}://${req.get('host')}`;
   notifications.rememberBaseUrl(res.locals.baseUrl);
   res.locals.waOpen = req.session.user && req.session.user.role !== 'washer' ? notifications.openCount() : 0;
+  res.locals.lowStockCount = req.session.user?.role === 'admin' ? services.lowStock().length : 0;
   next();
 });
-app.use(csrf());
+// Photo uploads are multipart: their CSRF token is checked by the upload route itself, after the form is read.
+const PHOTO_UPLOAD = /^\/app\/(jobs|transactions)\/\d+\/photos$/;
+app.use(csrf({ skip: (req) => PHOTO_UPLOAD.test(req.path) && req.is('multipart/form-data') }));
 
 app.use('/', require('./routes/public'));
 app.use('/', require('./routes/booking'));
@@ -64,7 +68,7 @@ staff.use(requireLogin);
 staff.get('/', (req, res, next) => (req.session.user.role === 'washer' ? res.redirect('/app/jobs') : next()));
 staff.use('/jobs', requireRole('washer', 'cashier'));
 staff.use(require('./routes/jobs'));
-staff.use(['/prices', '/catalog', '/users', '/settings', '/checklists', '/bays', '/promos', '/membership-plans', '/memberships/:id/cancel'], requireAdmin);
+staff.use(['/prices', '/catalog', '/users', '/settings', '/checklists', '/bays', '/promos', '/membership-plans', '/memberships/:id/cancel', '/stock', '/expenses'], requireAdmin);
 staff.use(require('./routes/admin'));
 staff.use(requireRole('cashier'), require('./routes/staff'));
 app.use('/app', staff);

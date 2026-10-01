@@ -7,6 +7,10 @@
   </div>
   <span class="badge badge-<%= tx.status %>"><%= t('status.' + tx.status) %></span>
 </div>
+<div class="card" style="margin-bottom:18px">
+  <h2><%= t('photo.title') %></h2>
+  <%- include('../partials/photos', { tx, photos, back: 'job', editable: tx.status === 'washing' || user.role !== 'washer', src: (p) => '/app/photos/' + p.id }) %>
+</div>
 <div class="grid-2">
   <div class="card">
     <h2><%= t('work.checklist') %></h2>

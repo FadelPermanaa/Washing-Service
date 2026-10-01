@@ -36,6 +36,12 @@
     </div>
   </div>
   <div>
+  <% if (lowStock.length) { %>
+  <div class="card supply-low">
+    <div class="card-head"><h2><%= t('stock.lowTitle') %></h2><a class="btn btn-sm btn-ghost" href="/app/stock"><%= t('nav.stock') %></a></div>
+    <% lowStock.forEach((s) => { %><div class="r-line"><span><%= L(s) %></span><strong class="mono" style="color:var(--danger)"><%= Number(s.stock).toLocaleString(locale) %> <%= s.unit %></strong></div><% }) %>
+  </div>
+  <% } %>
   <% if (bookings.length) { %>
   <div class="card">
     <div class="card-head"><h2><%= t('dash.bookingsToday') %></h2><a class="btn btn-sm btn-ghost" href="/app/bookings"><%= t('dash.viewAll') %></a></div>

@@ -37,6 +37,10 @@
       <%- include('../partials/checklist-list', { tx, back: 'detail' }) %>
     </div>
     <% } %>
+    <div class="card">
+      <h2><%= t('photo.title') %></h2>
+      <%- include('../partials/photos', { tx, photos, back: 'detail', editable: tx.status !== 'cancelled', src: (p) => '/app/photos/' + p.id }) %>
+    </div>
     <% if (messages.length) { %>
     <div class="card">
       <h2><%= t('wa.title') %></h2>

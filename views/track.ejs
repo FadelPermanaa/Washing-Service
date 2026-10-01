@@ -30,6 +30,12 @@
         <dt><%= t('sum.total') %></dt><dd><strong><%= rupiah(tx.total) %></strong> · <span class="badge badge-<%= payState(tx) %>"><%= t('pay.' + payState(tx)) %></span></dd>
       </dl>
     </div>
+    <% if (photos.all.length) { %>
+    <div class="card">
+      <h2><%= t('photo.title') %></h2>
+      <%- include('partials/photos', { tx, photos, back: 'track', editable: false, src: (p) => '/t/' + tx.token + '/photos/' + p.id }) %>
+    </div>
+    <% } %>
     <p class="small muted"><%= t('track.autoRefresh') %></p>
   </div>
 </section>

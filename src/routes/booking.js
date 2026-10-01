@@ -67,7 +67,15 @@ router.post('/b/:token/cancel', (req, res, next) => {
 router.get('/t/:token', (req, res) => {
   const t = svc.getTransactionByToken(req.params.token);
   if (!t) return notFound(req, res, 'err.txNotFound');
-  res.render('track', { title: `${t.plate} · ${t.code}`, tx: t });
+  res.render('track', { title: `${t.plate} · ${t.code}`, tx: t, photos: svc.listPhotos(t.id) });
+});
+
+router.get('/t/:token/photos/:id', (req, res) => {
+  const t = svc.getTransactionByToken(req.params.token);
+  const p = t && svc.photoFile(svc.toInt(req.params.id), { txId: t.id });
+  if (!p) return notFound(req, res);
+  res.set('Cache-Control', 'private, max-age=86400');
+  res.type(p.mime).sendFile(p.file);
 });
 
 module.exports = router;

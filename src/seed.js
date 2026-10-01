@@ -94,6 +94,25 @@ pool.slice(0, 3).forEach((v) => {
   try { svc.sellMembership({ plate: v.plate, plan_id: plan.id, method: 'QRIS' }, admin.id); } catch { /* plan type mismatch */ }
 });
 
+// Supplies and a month of expenses.
+if (!db.prepare('SELECT 1 FROM supplies').get()) {
+  const det = packages.find((p) => p.name === 'Interior Detailing');
+  [
+    { name: 'Car shampoo', name_id: 'Sampo mobil', unit: 'liter', stock: 18, min_stock: 5, usage_per_wash: 0.2 },
+    { name: 'Snow foam', name_id: 'Snow foam', unit: 'liter', stock: 3, min_stock: 4, usage_per_wash: 0.1 },
+    { name: 'Body wax', name_id: 'Wax bodi', unit: 'kaleng', stock: 6, min_stock: 2, usage_per_wash: 0 },
+    { name: 'Interior cleaner', name_id: 'Pembersih interior', unit: 'botol', stock: 8, min_stock: 2, usage_per_wash: 1, usage_package_id: det?.id },
+    { name: 'Microfiber cloth', name_id: 'Lap microfiber', unit: 'pcs', stock: 40, min_stock: 10, usage_per_wash: 0 },
+  ].forEach((sup) => svc.createSupply(sup, admin.id));
+  const month = now().slice(0, 7);
+  [['01', 'rent', 3500000, 'Sewa tempat'], ['03', 'utilities', 850000, 'Listrik'], ['03', 'utilities', 320000, 'Air PDAM'],
+    ['05', 'supplies', 640000, 'Sampo & snow foam'], ['10', 'equipment', 450000, 'Servis mesin steam'], ['15', 'marketing', 300000, 'Iklan Instagram'],
+    ['25', 'salary', 4800000, 'Gaji kasir & pencuci']].forEach(([d, category, amount, note]) => {
+    const date = `${month}-${d}`;
+    if (date <= now().slice(0, 10)) svc.addExpense({ date, category, amount, note }, admin.id);
+  });
+}
+
 // A few online bookings for today and the next days.
 let bookingsMade = 0;
 for (const [offset, time, name, plate, pkgIdx] of [

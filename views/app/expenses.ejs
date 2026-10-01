@@ -1,0 +1,49 @@
+<%- include('../partials/app-start') %>
+<% const [y, m] = month.split('-').map(Number); const total = byCategory.reduce((s, c) => s + c.total, 0); const max = Math.max(1, ...byCategory.map((c) => c.total)); %>
+<div class="topbar">
+  <div><h1><%= t('exp.title') %></h1><div class="sub"><%= new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' }) %> · <%= t('exp.total', { total: rupiah(total) }) %></div></div>
+  <form class="actions" method="get"><input type="month" name="month" value="<%= month %>" aria-label="<%= t('rep.month') %>" data-autosubmit><noscript><button class="btn" type="submit"><%= t('rep.show') %></button></noscript></form>
+</div>
+<div class="grid-2">
+  <div>
+    <div class="card">
+      <h2><%= t('exp.byCategory') %></h2>
+      <% if (!byCategory.length) { %><div class="empty"><%= t('exp.none') %></div><% } %>
+      <% byCategory.forEach((c) => { %>
+        <div style="margin-bottom:12px"><div class="card-head" style="margin:0"><span><%= t('exp.cat.' + c.category) %> <span class="muted small">× <%= c.count %></span></span><strong class="mono"><%= rupiah(c.total) %></strong></div><div class="meter"><i style="width:<%= Math.round(c.total / max * 100) %>%;background:var(--sky)"></i></div></div>
+      <% }) %>
+      <p class="small muted" style="margin:6px 0 0"><%= t('exp.commissionNote') %></p>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="data stack">
+          <thead><tr><th><%= t('col.date') %></th><th><%= t('exp.category') %></th><th><%= t('new.notes') %></th><th class="num"><%= t('detail.amount') %></th><th></th></tr></thead>
+          <tbody>
+            <% if (!rows.length) { %><tr><td colspan="5" class="empty"><%= t('exp.none') %></td></tr><% } %>
+            <% rows.forEach((e) => { %>
+              <tr>
+                <td data-label="<%= t('col.date') %>" class="mono nowrap"><%= e.date %></td>
+                <td data-label="<%= t('exp.category') %>"><%= t('exp.cat.' + e.category) %></td>
+                <td data-label="<%= t('new.notes') %>"><%= e.note || '—' %><% if (e.created_by_name) { %><div class="small muted"><%= e.created_by_name %></div><% } %></td>
+                <td data-label="<%= t('detail.amount') %>" class="num nowrap"><strong><%= rupiah(e.amount) %></strong></td>
+                <td data-label="" class="num"><form method="post" action="/app/expenses/<%= e.id %>/delete" data-confirm="<%= t('exp.deleteConfirm') %>"><%- include('../partials/csrf') %><input type="hidden" name="month" value="<%= month %>"><button class="btn btn-sm btn-danger" type="submit"><%= t('checklist.delete') %></button></form></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <form class="card" method="post" action="/app/expenses"><%- include('../partials/csrf') %>
+    <h2><%= t('exp.add') %></h2>
+    <div class="field-row">
+      <div class="field"><label for="e-date"><%= t('col.date') %></label><input id="e-date" type="date" name="date" value="<%= today %>" required></div>
+      <div class="field"><label for="e-amount"><%= t('detail.amount') %> (Rp)</label><input id="e-amount" type="number" name="amount" min="1" step="500" required inputmode="numeric"></div>
+    </div>
+    <div class="field"><label for="e-cat"><%= t('exp.category') %></label><select id="e-cat" name="category"><% categories.forEach((c) => { %><option value="<%= c %>"><%= t('exp.cat.' + c) %></option><% }) %></select></div>
+    <div class="field"><label for="e-note"><%= t('new.notes') %></label><input id="e-note" type="text" name="note" maxlength="200" placeholder="<%= t('exp.notePh') %>"></div>
+    <button class="btn btn-block" type="submit"><%= t('exp.addBtn') %></button>
+    <p class="small muted" style="margin:12px 0 0"><%= t('exp.stockNote') %> <a href="/app/stock"><%= t('nav.stock') %> →</a></p>
+  </form>
+</div>
+<%- include('../partials/app-end') %>

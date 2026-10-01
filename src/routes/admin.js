@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, now, tx } = require('../db');
+const { db, now, today, tx } = require('../db');
 const { hashPassword } = require('../auth');
 const svc = require('../services');
 const settings = require('../settings');
@@ -287,5 +287,60 @@ router.post('/settings/loyalty', action((req, res) => {
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/settings#loyalty');
 }, '/app/settings'));
+
+// ---------- Stock ----------
+
+router.get('/stock', (req, res) => {
+  const supplies = svc.listSupplies({ includeInactive: true });
+  const moves = Object.fromEntries(supplies.map((s) => [s.id, svc.listMoves(s.id, 8)]));
+  res.render('app/stock', { title: req.t('stock.title'), supplies, moves, priceList: svc.getPriceList() });
+});
+
+router.post('/stock', action((req, res) => {
+  svc.createSupply(req.body, req.session.user.id);
+  flash(req, 'success', 'flash.saved');
+  res.redirect('/app/stock');
+}, '/app/stock'));
+
+router.post('/stock/:id', action((req, res) => {
+  svc.updateSupply(toInt(req.params.id), req.body);
+  flash(req, 'success', 'flash.saved');
+  res.redirect(`/app/stock#supply-${req.params.id}`);
+}, '/app/stock'));
+
+router.post('/stock/:id/move', action((req, res) => {
+  const r = svc.moveStock(toInt(req.params.id), {
+    type: String(req.body.type), qty: req.body.qty, cost: req.body.cost, note: req.body.note, recordExpense: req.body.record_expense === '1',
+  }, req.session.user.id);
+  flash(req, 'success', r.expenseId ? 'flash.stockAndExpense' : 'flash.stockSaved');
+  res.redirect(`/app/stock#supply-${req.params.id}`);
+}, '/app/stock'));
+
+router.post('/stock/:id/toggle', action((req, res) => {
+  svc.toggleSupply(toInt(req.params.id));
+  res.redirect('/app/stock');
+}, '/app/stock'));
+
+// ---------- Expenses ----------
+
+router.get('/expenses', (req, res) => {
+  const month = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : today().slice(0, 7);
+  res.render('app/expenses', {
+    title: req.t('exp.title'), month, rows: svc.listExpenses(month), byCategory: svc.expensesByCategory(month),
+    categories: svc.EXPENSE_CATEGORIES, today: today(),
+  });
+});
+
+router.post('/expenses', action((req, res) => {
+  svc.addExpense(req.body, req.session.user.id);
+  flash(req, 'success', 'flash.expenseAdded');
+  res.redirect(`/app/expenses?month=${String(req.body.date || today()).slice(0, 7)}`);
+}, '/app/expenses'));
+
+router.post('/expenses/:id/delete', action((req, res) => {
+  svc.deleteExpense(toInt(req.params.id));
+  flash(req, 'success', 'flash.expenseDeleted');
+  res.redirect(`/app/expenses${req.body.month ? `?month=${encodeURIComponent(req.body.month)}` : ''}`);
+}, '/app/expenses'));
 
 module.exports = router;

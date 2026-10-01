@@ -312,6 +312,58 @@ const migrations = [
       SELECT id, total, COALESCE(payment_method, 'Cash'), COALESCE(paid_at, created_at), created_by
       FROM transactions WHERE payment_status = 'paid' AND total > 0`);
   },
+
+  // 7 — before/after photos, supplies & stock, expenses.
+  () => db.exec(`
+    CREATE TABLE transaction_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL CHECK (kind IN ('before', 'after')),
+      filename TEXT NOT NULL,
+      mime TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      created_by INTEGER REFERENCES users(id)
+    );
+    CREATE INDEX idx_photos_tx ON transaction_photos(transaction_id);
+
+    CREATE TABLE expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      category TEXT NOT NULL CHECK (category IN ('supplies', 'utilities', 'salary', 'rent', 'equipment', 'marketing', 'other')),
+      amount INTEGER NOT NULL CHECK (amount > 0),
+      note TEXT,
+      created_at TEXT NOT NULL,
+      created_by INTEGER REFERENCES users(id)
+    );
+    CREATE INDEX idx_expenses_date ON expenses(date);
+
+    CREATE TABLE supplies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      name_id TEXT,
+      unit TEXT NOT NULL DEFAULT 'pcs',
+      stock REAL NOT NULL DEFAULT 0,
+      min_stock REAL NOT NULL DEFAULT 0,
+      usage_per_wash REAL NOT NULL DEFAULT 0,
+      usage_package_id INTEGER REFERENCES packages(id),
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE stock_moves (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      supply_id INTEGER NOT NULL REFERENCES supplies(id),
+      qty REAL NOT NULL,
+      reason TEXT NOT NULL CHECK (reason IN ('purchase', 'usage', 'wash', 'adjust')),
+      note TEXT,
+      transaction_id INTEGER REFERENCES transactions(id),
+      expense_id INTEGER REFERENCES expenses(id),
+      created_at TEXT NOT NULL,
+      created_by INTEGER REFERENCES users(id)
+    );
+    CREATE INDEX idx_moves_supply ON stock_moves(supply_id, id);
+  `),
 ];
 
 function currentVersion() {

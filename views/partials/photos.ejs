@@ -1,0 +1,36 @@
+<%# Before/after photos. Locals: tx, photos, back ('detail' | 'job'), editable (bool), src (fn photo -> url) %>
+<div class="photo-groups" id="photos">
+  <% ['before', 'after'].forEach((kind) => { const list = photos[kind]; %>
+    <div class="photo-group">
+      <div class="photo-head">
+        <h3><%= tr('photo.' + kind) %> <span class="muted small">(<%= list.length %>)</span></h3>
+        <% if (editable) { %>
+          <form class="photo-upload" method="post" action="/app/<%= back === 'detail' ? 'transactions' : 'jobs' %>/<%= tx.id %>/photos" enctype="multipart/form-data" data-photo-upload>
+            <%- include('csrf') %>
+            <input type="hidden" name="kind" value="<%= kind %>">
+            <input type="hidden" name="back" value="<%= back %>">
+            <label class="btn btn-sm<%= kind === 'after' ? ' btn-sky' : '' %>">
+              <%- include('icon', { name: 'camera', size: 16 }) %> <span data-label><%= tr('photo.add') %></span>
+              <input class="sr-only" type="file" name="photos" accept="image/jpeg,image/png,image/webp" capture="environment" multiple>
+            </label>
+            <noscript><button class="btn btn-sm btn-ghost" type="submit"><%= tr('photo.upload') %></button></noscript>
+          </form>
+        <% } %>
+      </div>
+      <% if (!list.length) { %>
+        <p class="small muted" style="margin:0"><%= tr('photo.none') %></p>
+      <% } else { %>
+        <div class="photo-grid">
+          <% list.forEach((p) => { %>
+            <figure class="photo">
+              <a href="<%= src(p) %>" target="_blank" rel="noopener"><img src="<%= src(p) %>" alt="<%= tr('photo.' + kind) %> · <%= tx.plate %>" loading="lazy"></a>
+              <% if (editable && (user.role !== 'washer' || p.created_by === user.id)) { %>
+                <form method="post" action="/app/photos/<%= p.id %>/delete" data-confirm="<%= tr('photo.deleteConfirm') %>"><%- include('csrf') %><input type="hidden" name="back" value="<%= back %>"><button class="photo-del" type="submit" aria-label="<%= tr('photo.delete') %>">×</button></form>
+              <% } %>
+            </figure>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  <% }) %>
+</div>

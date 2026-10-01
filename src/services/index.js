@@ -8,5 +8,7 @@ module.exports = {
   ...require('./bookings'),
   ...require('./payments'),
   ...require('./marketing'),
+  ...require('./photos'),
+  ...require('./finance'),
   notifications: require('./notifications'),
 };
