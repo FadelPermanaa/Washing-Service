@@ -95,7 +95,7 @@ pool.slice(0, 3).forEach((v) => {
   try { svc.sellMembership({ plate: v.plate, plan_id: plan.id, method: 'QRIS' }, admin.id); } catch { /* plan type mismatch */ }
 });
 
-// Supplies and a month of expenses.
+// Supplies, and expenses for last month and this month (the washes go back ~6 weeks).
 if (!db.prepare('SELECT 1 FROM supplies').get()) {
   const det = packages.find((p) => p.name === 'Interior Detailing');
   [
@@ -105,13 +105,16 @@ if (!db.prepare('SELECT 1 FROM supplies').get()) {
     { name: 'Interior cleaner', name_id: 'Pembersih interior', unit: 'botol', stock: 8, min_stock: 2, usage_per_wash: 1, usage_package_id: det?.id },
     { name: 'Microfiber cloth', name_id: 'Lap microfiber', unit: 'pcs', stock: 40, min_stock: 10, usage_per_wash: 0 },
   ].forEach((sup) => svc.createSupply(sup, admin.id));
-  const month = now().slice(0, 7);
-  [['01', 'rent', 3500000, 'Sewa tempat'], ['03', 'utilities', 850000, 'Listrik'], ['03', 'utilities', 320000, 'Air PDAM'],
-    ['05', 'supplies', 640000, 'Sampo & snow foam'], ['10', 'equipment', 450000, 'Servis mesin steam'], ['15', 'marketing', 300000, 'Iklan Instagram'],
-    ['25', 'salary', 4800000, 'Gaji kasir & pencuci']].forEach(([d, category, amount, note]) => {
-    const date = `${month}-${d}`;
-    if (date <= now().slice(0, 10)) svc.addExpense({ date, category, amount, note }, admin.id);
-  });
+  const [year, mon] = now().slice(0, 7).split('-').map(Number);
+  const lastMonth = mon === 1 ? `${year - 1}-12` : `${year}-${String(mon - 1).padStart(2, '0')}`;
+  for (const month of [lastMonth, now().slice(0, 7)]) {
+    [['01', 'rent', 3500000, 'Sewa tempat'], ['03', 'utilities', 850000, 'Listrik'], ['03', 'utilities', 320000, 'Air PDAM'],
+      ['05', 'supplies', 640000, 'Sampo & snow foam'], ['10', 'equipment', 450000, 'Servis mesin steam'], ['15', 'marketing', 300000, 'Iklan Instagram'],
+      ['25', 'salary', 4800000, 'Gaji kasir & pencuci']].forEach(([d, category, amount, note]) => {
+      const date = `${month}-${d}`;
+      if (date <= now().slice(0, 10)) svc.addExpense({ date, category, amount, note }, admin.id);
+    });
+  }
 }
 
 // A few online bookings for today and the next days.
