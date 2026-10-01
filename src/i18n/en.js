@@ -539,4 +539,9 @@ module.exports = {
   'settings.waManual': "No WhatsApp gateway is connected, so messages wait on the WhatsApp page for staff to send with one tap. To send automatically, set WHATSAPP_TOKEN (Fonnte) on the server.",
   'settings.waGateway': "A WhatsApp gateway is connected — messages are sent automatically.",
   'err.url': "The website address must start with http:// or https://.",
+
+  // Payments
+  'method.Mixed': "Mixed",
+  'err.amount': "Enter an amount above zero.",
+  'err.overpay': "That is more than what is still owed ({due}).",
 };

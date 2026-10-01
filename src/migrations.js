@@ -237,6 +237,81 @@ const migrations = [
     CREATE UNIQUE INDEX idx_notif_once_booking ON notifications(kind, booking_id) WHERE booking_id IS NOT NULL;
     CREATE INDEX idx_notif_status ON notifications(status);
   `),
+
+  // 6 — payments (split / partial), promo codes, stamp card, prepaid memberships.
+  () => {
+    db.exec(`
+      CREATE TABLE promos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        description TEXT,
+        type TEXT NOT NULL CHECK (type IN ('percent', 'fixed')),
+        value INTEGER NOT NULL CHECK (value > 0),
+        min_spend INTEGER NOT NULL DEFAULT 0,
+        starts_on TEXT,
+        ends_on TEXT,
+        max_uses INTEGER,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE membership_plans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        name_id TEXT,
+        package_id INTEGER NOT NULL REFERENCES packages(id),
+        vehicle_type_id INTEGER REFERENCES vehicle_types(id),
+        washes INTEGER NOT NULL CHECK (washes > 0),
+        valid_days INTEGER NOT NULL CHECK (valid_days > 0),
+        price INTEGER NOT NULL CHECK (price >= 0),
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE memberships (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id INTEGER NOT NULL REFERENCES membership_plans(id),
+        vehicle_id INTEGER NOT NULL REFERENCES vehicles(id),
+        washes_total INTEGER NOT NULL,
+        washes_left INTEGER NOT NULL CHECK (washes_left >= 0),
+        starts_on TEXT NOT NULL,
+        expires_on TEXT NOT NULL,
+        price INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled')),
+        created_at TEXT NOT NULL,
+        created_by INTEGER REFERENCES users(id)
+      );
+      CREATE INDEX idx_memberships_vehicle ON memberships(vehicle_id, status);
+
+      CREATE TABLE payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transaction_id INTEGER REFERENCES transactions(id),
+        membership_id INTEGER REFERENCES memberships(id),
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        method TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        created_by INTEGER REFERENCES users(id),
+        CHECK ((transaction_id IS NULL) != (membership_id IS NULL))
+      );
+      CREATE INDEX idx_payments_tx ON payments(transaction_id);
+      CREATE INDEX idx_payments_created ON payments(created_at);
+
+      ALTER TABLE transactions ADD COLUMN promo_id INTEGER REFERENCES promos(id);
+      ALTER TABLE transactions ADD COLUMN promo_code TEXT;
+      ALTER TABLE transactions ADD COLUMN promo_discount INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE transactions ADD COLUMN free_discount INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE transactions ADD COLUMN membership_id INTEGER REFERENCES memberships(id);
+      ALTER TABLE transactions ADD COLUMN membership_discount INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE transactions ADD COLUMN stamp_earned INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE transactions ADD COLUMN stamps_used INTEGER NOT NULL DEFAULT 0;
+
+      ALTER TABLE vehicles ADD COLUMN stamps INTEGER NOT NULL DEFAULT 0;
+    `);
+    // Every earlier "paid" transaction becomes one payment of the full amount.
+    db.exec(`INSERT INTO payments (transaction_id, amount, method, created_at, created_by)
+      SELECT id, total, COALESCE(payment_method, 'Cash'), COALESCE(paid_at, created_at), created_by
+      FROM transactions WHERE payment_status = 'paid' AND total > 0`);
+  },
 ];
 
 function currentVersion() {

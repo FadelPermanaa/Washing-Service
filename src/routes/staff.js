@@ -68,7 +68,7 @@ router.post('/transactions/:id/status', action((req, res) => {
 }, '/app/queue'));
 
 router.post('/transactions/:id/pay', action((req, res) => {
-  svc.markPaid(svc.toInt(req.params.id), String(req.body.method));
+  svc.markPaid(svc.toInt(req.params.id), String(req.body.method), req.session.user.id);
   flash(req, 'success', 'flash.paid');
   res.redirect(req.body.back === 'detail' ? `/app/transactions/${req.params.id}` : '/app/queue');
 }, '/app/queue'));

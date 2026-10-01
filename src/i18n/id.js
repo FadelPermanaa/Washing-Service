@@ -546,4 +546,9 @@ module.exports = {
   'settings.waManual': "Belum ada gateway WhatsApp yang terhubung, jadi pesan menunggu di halaman WhatsApp untuk dikirim staf dengan sekali ketuk. Agar terkirim otomatis, isi WHATSAPP_TOKEN (Fonnte) di server.",
   'settings.waGateway': "Gateway WhatsApp sudah terhubung — pesan dikirim otomatis.",
   'err.url': "Alamat website harus diawali http:// atau https://.",
+
+  // Pembayaran
+  'method.Mixed': "Campuran",
+  'err.amount': "Masukkan jumlah lebih dari nol.",
+  'err.overpay': "Jumlahnya melebihi sisa tagihan ({due}).",
 };

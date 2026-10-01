@@ -49,4 +49,6 @@ test('upgrades a database from the first release', () => {
   // existing data is untouched
   assert.equal(db.prepare('SELECT total FROM transactions WHERE id = 1').get().total, 25000);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users').get().n, 1);
+  const pay = db.prepare('SELECT amount, method FROM payments WHERE transaction_id = 1').get();
+  assert.deepEqual({ ...pay }, { amount: 25000, method: 'Cash' });
 });

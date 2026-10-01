@@ -5,6 +5,7 @@ const { packagePrice, activeAddons } = require('./catalog');
 const { upsertVehicle } = require('./vehicles');
 const work = require('./work');
 const notifications = require('./notifications');
+const payments = require('./payments');
 
 /** Price breakdown for a new transaction. */
 function quote({ vehicleTypeId, packageId, addonIds = [], discount = 0 }) {
@@ -56,6 +57,10 @@ function createTransaction(input, userId, { bookingId = null } = {}) {
     for (const a of q.addons) {
       db.prepare('INSERT INTO transaction_addons (transaction_id, addon_id, name, name_id, price) VALUES (?, ?, ?, ?, ?)')
         .run(txId, a.id, a.name, a.name_id ?? null, a.price);
+    }
+    if (paid && q.total > 0) {
+      db.prepare('INSERT INTO payments (transaction_id, amount, method, created_at, created_by) VALUES (?, ?, ?, ?, ?)')
+        .run(txId, q.total, method, ts, userId ?? null);
     }
     notifications.notifyTransaction('tx_received', txId);
     return txId;
@@ -128,13 +133,9 @@ function changeStatus(id, action, opts = {}) {
   throw new UserError('err.unknownAction');
 }
 
-function markPaid(id, method) {
-  if (!PAYMENT_METHODS.includes(method)) throw new UserError('err.chooseMethod');
-  const t = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
-  if (!t) throw new UserError('err.txNotFound');
-  if (t.status === 'cancelled') throw new UserError('err.cancelled');
-  if (t.payment_status === 'paid') throw new UserError('err.alreadyPaid');
-  db.prepare("UPDATE transactions SET payment_status = 'paid', payment_method = ?, paid_at = ? WHERE id = ?").run(method, now(), id);
+/** Pay everything still owed on a transaction. */
+function markPaid(id, method, userId = null) {
+  return payments.recordPayment(id, { method }, userId);
 }
 
 /** Public status lookup by plate — only exposes non-personal fields. */
