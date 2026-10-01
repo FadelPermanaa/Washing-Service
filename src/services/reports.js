@@ -65,7 +65,64 @@ function monthlyReport(month) {
     vehicles: byDay.reduce((s, r) => s + r.vehicles, 0),
     revenue: byDay.reduce((s, r) => s + r.revenue, 0),
   };
-  return { month: m, byDay, byPackage, byType, byMethod, byWasher, loyalty: { ...loyalty }, memberships: { ...memberships }, byPromo, totals };
+
+  // Profit = money received − expenses − washer commission earned this month.
+  const expenses = db.prepare('SELECT COALESCE(SUM(amount), 0) AS n FROM expenses WHERE substr(date, 1, 7) = ?').get(m).n;
+  const commission = byWasher.reduce((s, w) => s + w.commission, 0);
+  const expensesByCategory = db.prepare(`SELECT category, SUM(amount) AS total FROM expenses WHERE substr(date, 1, 7) = ?
+    GROUP BY category ORDER BY total DESC`).all(m);
+  const profit = { revenue: totals.revenue, expenses, commission, net: totals.revenue - expenses - commission, expensesByCategory };
+
+  // Busiest hours: cars arriving per weekday (0 = Sunday) and hour.
+  const heat = db.prepare(`SELECT CAST(strftime('%w', created_at) AS INTEGER) AS dow, CAST(substr(created_at, 12, 2) AS INTEGER) AS hour, COUNT(*) AS n
+    FROM transactions WHERE substr(created_at, 1, 7) = ? AND status != 'cancelled' GROUP BY dow, hour`).all(m);
+  const hours = heat.length ? [Math.min(...heat.map((h) => h.hour)), Math.max(...heat.map((h) => h.hour))] : [8, 17];
+  const busiest = { cells: Object.fromEntries(heat.map((h) => [`${h.dow}:${h.hour}`, h.n])), max: Math.max(1, ...heat.map((h) => h.n)), from: hours[0], to: hours[1] };
+
+  return {
+    month: m, byDay, byPackage, byType, byMethod, byWasher, loyalty: { ...loyalty }, memberships: { ...memberships }, byPromo, totals, profit, busiest,
+  };
 }
 
-module.exports = { dashboardStats, monthlyReport };
+// ---------- CSV export ----------
+
+const EXPORTS = {
+  transactions: (m) => db.prepare(`
+    SELECT x.code, x.created_at, v.plate, c.name AS customer, x.vehicle_type_name AS vehicle_type, x.package_name AS package,
+      x.package_price, x.addons_total, x.membership_discount, x.free_discount, x.promo_code, x.promo_discount, x.discount, x.total,
+      x.status, x.payment_status, x.payment_method,
+      (SELECT COALESCE(SUM(amount), 0) FROM payments p WHERE p.transaction_id = x.id) AS paid,
+      w.name AS washer, x.commission, x.started_at, x.finished_at
+    FROM transactions x JOIN vehicles v ON v.id = x.vehicle_id LEFT JOIN customers c ON c.id = x.customer_id LEFT JOIN users w ON w.id = x.washer_id
+    WHERE substr(x.created_at, 1, 7) = ? ORDER BY x.id`).all(m),
+  payments: (m) => db.prepare(`
+    SELECT p.created_at, p.amount, p.method, x.code AS transaction_code, mp.name AS membership_plan, u.name AS cashier
+    FROM payments p LEFT JOIN transactions x ON x.id = p.transaction_id LEFT JOIN memberships ms ON ms.id = p.membership_id
+    LEFT JOIN membership_plans mp ON mp.id = ms.plan_id LEFT JOIN users u ON u.id = p.created_by
+    WHERE substr(p.created_at, 1, 7) = ? ORDER BY p.id`).all(m),
+  expenses: (m) => db.prepare(`SELECT e.date, e.category, e.amount, e.note, u.name AS recorded_by FROM expenses e
+    LEFT JOIN users u ON u.id = e.created_by WHERE substr(e.date, 1, 7) = ? ORDER BY e.date, e.id`).all(m),
+  washers: (m) => monthlyReport(m).byWasher.map(({ name, count, revenue, commission, avg_minutes: avgMinutes }) => ({ washer: name, cars: count, revenue, commission, avg_minutes: avgMinutes })),
+};
+
+/**
+ * Rows of one export as CSV text (UTF-8 with BOM so Excel shows Indonesian characters).
+ * Indonesian Excel uses ";" as the list separator, English uses ",".
+ */
+function exportCsv(type, month, { sep = ',' } = {}) {
+  const fn = EXPORTS[type];
+  if (!fn) return null;
+  const rows = fn(month).map((r) => ({ ...r }));
+  const cols = rows.length ? Object.keys(rows[0]) : [];
+  const cell = (v) => {
+    if (v === null || v === undefined) return '';
+    const str = String(v);
+    // Guard against spreadsheet formula injection and quote when needed.
+    const safe = /^[=+\-@\t\r]/.test(str) && !/^-?\d+(\.\d+)?$/.test(str) ? `'${str}` : str;
+    return /["\n\r]/.test(safe) || safe.includes(sep) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  };
+  const lines = [cols.join(sep), ...rows.map((r) => cols.map((c) => cell(r[c])).join(sep))];
+  return `\uFEFF${lines.join('\r\n')}\r\n`;
+}
+
+module.exports = { dashboardStats, monthlyReport, exportCsv, EXPORT_TYPES: Object.keys(EXPORTS) };

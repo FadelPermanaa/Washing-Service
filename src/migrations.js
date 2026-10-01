@@ -364,6 +364,21 @@ const migrations = [
     );
     CREATE INDEX idx_moves_supply ON stock_moves(supply_id, id);
   `),
+
+  // 8 — activity log: who changed prices, cancelled washes, gave discounts, etc.
+  () => db.exec(`
+    CREATE TABLE audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id),
+      action TEXT NOT NULL,
+      entity TEXT,
+      entity_id INTEGER,
+      detail TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX idx_audit_created ON audit_log(created_at);
+    CREATE INDEX idx_audit_user ON audit_log(user_id);
+  `),
 ];
 
 function currentVersion() {

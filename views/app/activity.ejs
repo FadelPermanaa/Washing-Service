@@ -1,0 +1,29 @@
+<%- include('../partials/app-start') %>
+<div class="topbar">
+  <div><h1><%= t('act.title') %></h1><div class="sub"><%= t('act.sub') %></div></div>
+</div>
+<div class="card">
+  <form class="filters" method="get">
+    <select name="user" aria-label="<%= t('act.who') %>"><option value=""><%= t('act.allUsers') %></option><% users.forEach((u) => { %><option value="<%= u.id %>"<%= filters.userId === u.id ? ' selected' : '' %>><%= u.name %></option><% }) %></select>
+    <select name="action" aria-label="<%= t('act.what') %>"><option value=""><%= t('act.allActions') %></option><% actions.forEach((a) => { %><option value="<%= a %>"<%= filters.action === a ? ' selected' : '' %>><%= t('act.a.' + a) %></option><% }) %></select>
+    <input type="date" name="date" value="<%= filters.date %>" aria-label="<%= t('col.date') %>">
+    <button class="btn" type="submit"><%= t('btn.filter') %></button>
+  </form>
+  <div class="table-wrap">
+    <table class="data stack">
+      <thead><tr><th><%= t('act.when') %></th><th><%= t('act.who') %></th><th><%= t('act.what') %></th><th><%= t('act.detail') %></th></tr></thead>
+      <tbody>
+        <% if (!rows.length) { %><tr><td colspan="4" class="empty"><%= t('act.none') %></td></tr><% } %>
+        <% rows.forEach((a) => { %>
+          <tr class="<%= a.action === 'login.failed' || a.action.endsWith('.cancel') || a.action.endsWith('delete') ? 'act-warn' : '' %>">
+            <td data-label="<%= t('act.when') %>" class="mono nowrap"><%= a.created_at.slice(0, 16) %></td>
+            <td data-label="<%= t('act.who') %>"><%= a.user_name || '—' %></td>
+            <td data-label="<%= t('act.what') %>"><strong><%= t('act.a.' + a.action) %></strong><% if (a.entity === 'transactions' && a.entity_id) { %> · <a class="row-link" href="/app/transactions/<%= a.entity_id %>">#<%= a.entity_id %></a><% } %></td>
+            <td data-label="<%= t('act.detail') %>" class="small act-detail"><%= a.detail ? Object.entries(a.detail).filter(([, v]) => v !== null && v !== false && v !== '').map(([k, v]) => `${k}: ${v}`).join(' · ') : '' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/app-end') %>

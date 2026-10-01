@@ -690,3 +690,38 @@ a.icon-btn { text-decoration: none; }
 .inline-check { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; margin: 0; }
 section.card.supply + section.card.supply { margin-top: 14px; }
 .stock-move .price-input { width: 150px !important; }
+
+/* Reports: profit, busiest hours, print */
+.profit-flow { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+.profit-flow > div { flex: 1; min-width: 140px; background: var(--paper); border: 1px solid var(--mocha-10); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.profit-flow .label { font-size: 12px; color: var(--mocha-60); font-weight: 600; }
+.profit-flow strong { font-size: 20px; }
+.profit-flow .op { align-self: center; font-size: 22px; font-weight: 700; color: var(--mocha-60); }
+.profit-flow .net { background: var(--mocha); border-color: var(--mocha); color: var(--vanilla); }
+.profit-flow .net .label { color: #C9BAB8; }
+.profit-flow .net.neg { background: var(--danger-bg); border-color: var(--danger-bg); color: var(--danger); }
+.profit-flow .net.neg .label { color: var(--danger); }
+.heatmap { border-collapse: separate; border-spacing: 3px; font-size: 12px; width: 100%; min-width: 520px; }
+.heatmap th { font-weight: 600; color: var(--mocha-60); padding: 2px 4px; text-align: center; }
+.heatmap tbody th { text-align: left; white-space: nowrap; }
+.heatmap td { height: 30px; min-width: 30px; text-align: center; border-radius: 6px; background: var(--paper); font-weight: 600; font-variant-numeric: tabular-nums; }
+.act-warn td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+.act-detail { color: var(--mocha-60); word-break: break-word; }
+.print-only { display: none; }
+@media print {
+  .print-only { display: block; }
+  .print-head { font-size: 14px; margin-bottom: 12px; }
+  .card { break-inside: avoid; box-shadow: none; }
+  .kpis { grid-template-columns: repeat(4, 1fr) !important; }
+  .grid-2-even { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+  .heatmap td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .profit-flow .net, .kpi.k-dark, .kpi.k-sky, .kpi.k-vanilla, .bars .bar, .meter i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.short-label { display: none; }
+@media (max-width: 440px) {
+  .site-nav .long-label { display: none; }
+  .site-nav .short-label { display: inline; }
+  .site-nav .container { gap: 8px; }
+}
+.wa-text, .receipt, .act-detail, .detail-list dd { overflow-wrap: anywhere; }
+.filters input:not([type=search]), .filters select { width: auto; }

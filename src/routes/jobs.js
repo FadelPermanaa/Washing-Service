@@ -4,7 +4,7 @@ const multer = require('multer');
 const { db } = require('../db');
 const svc = require('../services');
 const { verifyCsrf } = require('../security');
-const { flash, action, notFound } = require('./util');
+const { flash, action, notFound, log } = require('./util');
 
 // Photos arrive as multipart uploads; the CSRF token is checked after multer has read the form.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: svc.MAX_BYTES, files: svc.MAX_PER_KIND, fields: 10 } });
@@ -49,6 +49,7 @@ router.post('/jobs/:id/finish', action((req, res) => {
   const t = loadJob(req);
   if (!t) throw new svc.UserError('err.notYourJob');
   svc.finishWash(t.id);
+  log(req, 'wash.finish', { entity: 'transactions', id: t.id, detail: { code: t.code } });
   flash(req, 'success', 'flash.finish');
   res.redirect(req.session.user.role === 'washer' ? '/app/jobs' : '/app/queue');
 }, '/app/jobs'));
@@ -74,6 +75,7 @@ router.get('/photos/:id', (req, res) => {
 
 router.post('/photos/:id/delete', action((req, res) => {
   const txId = svc.deletePhoto(svc.toInt(req.params.id), req.session.user);
+  log(req, 'photo.delete', { entity: 'transactions', id: txId });
   flash(req, 'success', 'flash.photoDeleted');
   res.redirect(req.body.back === 'detail' ? `/app/transactions/${txId}#photos` : `/app/jobs/${txId}#photos`);
 }, '/app/jobs'));

@@ -3,7 +3,7 @@ const { db, now, today, tx } = require('../db');
 const { hashPassword } = require('../auth');
 const svc = require('../services');
 const settings = require('../settings');
-const { flash, action } = require('./util');
+const { flash, action, log } = require('./util');
 
 const router = express.Router();
 const { UserError, toInt, clean } = svc;
@@ -37,6 +37,7 @@ router.post('/prices', action((req, res) => {
       }
     }
   });
+  log(req, 'prices.update');
   flash(req, 'success', 'flash.pricesSaved');
   res.redirect('/app/prices');
 }, '/app/prices'));
@@ -65,6 +66,7 @@ router.post('/catalog/:kind', action((req, res) => {
     const order = db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM vehicle_types').get().n;
     db.prepare('INSERT INTO vehicle_types (name, name_id, sort_order) VALUES (?, ?, ?)').run(name, nameId, order);
   }
+  log(req, 'catalog.add', { entity: req.params.kind, detail: { name, name_id: nameId } });
   flash(req, 'success', 'flash.catalogAdded', { label: { key: `cat.${req.params.kind}` } });
   res.redirect('/app/prices');
 }, '/app/prices'));
@@ -72,6 +74,7 @@ router.post('/catalog/:kind', action((req, res) => {
 router.post('/catalog/:kind/:id/toggle', action((req, res) => {
   const table = catalogTable(req.params.kind);
   db.prepare(`UPDATE ${table} SET active = 1 - active WHERE id = ?`).run(toInt(req.params.id));
+  log(req, 'catalog.toggle', { entity: req.params.kind, id: toInt(req.params.id) });
   res.redirect('/app/prices');
 }, '/app/prices'));
 
@@ -88,12 +91,14 @@ router.post('/catalog/:kind/:id/names', action((req, res) => {
   } else {
     db.prepare(`UPDATE ${table} SET name = ?, name_id = ? WHERE id = ?`).run(name, clean(req.body.name_id, 60), id);
   }
+  log(req, 'catalog.rename', { entity: req.params.kind, id, detail: { name, name_id: req.body.name_id } });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/prices');
 }, '/app/prices'));
 
 router.post('/catalog/addons/:id/price', action((req, res) => {
   db.prepare('UPDATE addons SET price = ? WHERE id = ?').run(Math.max(0, toInt(req.body.price)), toInt(req.params.id));
+  log(req, 'addon.price', { entity: 'addons', id: toInt(req.params.id), detail: { price: toInt(req.body.price) } });
   flash(req, 'success', 'flash.addonPrice');
   res.redirect('/app/prices');
 }, '/app/prices'));
@@ -117,6 +122,7 @@ router.post('/users', action((req, res) => {
   const { type, value } = commissionInput(req.body);
   db.prepare(`INSERT INTO users (name, username, password_hash, role, phone, commission_type, commission_value, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(name, username, hashPassword(password), role, svc.normalizePhone(req.body.phone) || null, type, value, now());
+  log(req, 'user.create', { entity: 'users', detail: { username, role } });
   flash(req, 'success', 'flash.userCreated', { u: username });
   res.redirect('/app/users');
 }, '/app/users'));
@@ -130,6 +136,7 @@ router.post('/users/:id/profile', action((req, res) => {
   const { type, value } = commissionInput(req.body);
   db.prepare('UPDATE users SET name = ?, role = ?, phone = ?, commission_type = ?, commission_value = ? WHERE id = ?')
     .run(name, role, svc.normalizePhone(req.body.phone) || null, type, value, id);
+  log(req, 'user.update', { entity: 'users', id, detail: { name, role, commission: `${type}:${value}` } });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/users');
 }, '/app/users'));
@@ -138,6 +145,7 @@ router.post('/users/:id/toggle', action((req, res) => {
   const id = toInt(req.params.id);
   if (id === req.session.user.id) throw new UserError('err.selfDisable');
   db.prepare('UPDATE users SET active = 1 - active WHERE id = ?').run(id);
+  log(req, 'user.toggle', { entity: 'users', id });
   res.redirect('/app/users');
 }, '/app/users'));
 
@@ -145,6 +153,7 @@ router.post('/users/:id/password', action((req, res) => {
   const password = String(req.body.password || '');
   if (password.length < 6) throw new UserError('err.passwordShort');
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(password), toInt(req.params.id));
+  log(req, 'user.password', { entity: 'users', id: toInt(req.params.id) });
   flash(req, 'success', 'flash.passwordUpdated');
   res.redirect('/app/users');
 }, '/app/users'));
@@ -172,6 +181,7 @@ router.post('/settings/booking', action((req, res) => {
     booking_days_ahead: String(Math.min(60, Math.max(1, toInt(b.booking_days_ahead, 14)))),
     booking_min_notice: String(Math.min(24 * 60, Math.max(0, toInt(b.booking_min_notice, 60)))),
   });
+  log(req, 'settings.booking', { detail: { open: b.open_time, close: b.close_time, enabled: b.booking_enabled === '1' } });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/settings#booking');
 }, '/app/settings'));
@@ -186,6 +196,7 @@ router.post('/settings/business', action((req, res) => {
     message_lang: req.body.message_lang === 'en' ? 'en' : 'id',
     public_url: publicUrl,
   });
+  log(req, 'settings.business');
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/settings#business');
 }, '/app/settings'));
@@ -196,6 +207,7 @@ router.post('/bays', action((req, res) => {
   if (db.prepare('SELECT 1 FROM bays WHERE name = ?').get(name)) throw new UserError('err.exists', { name });
   const order = db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM bays').get().n;
   db.prepare('INSERT INTO bays (name, sort_order) VALUES (?, ?)').run(name, order);
+  log(req, 'bay.add', { entity: 'bays', detail: { name } });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/settings#bays');
 }, '/app/settings'));
@@ -206,6 +218,7 @@ router.post('/bays/:id', action((req, res) => {
   if (!name) throw new UserError('err.nameRequired');
   if (db.prepare('SELECT 1 FROM bays WHERE name = ? AND id != ?').get(name, id)) throw new UserError('err.exists', { name });
   db.prepare('UPDATE bays SET name = ? WHERE id = ?').run(name, id);
+  log(req, 'bay.rename', { entity: 'bays', id, detail: { name } });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/settings#bays');
 }, '/app/settings'));
@@ -216,6 +229,7 @@ router.post('/bays/:id/toggle', action((req, res) => {
   const bay = db.prepare('SELECT * FROM bays WHERE id = ?').get(id);
   if (bay?.active && busy) throw new UserError('err.bayInUse');
   db.prepare('UPDATE bays SET active = 1 - active WHERE id = ?').run(id);
+  log(req, 'bay.toggle', { entity: 'bays', id });
   res.redirect('/app/settings#bays');
 }, '/app/settings'));
 
@@ -230,6 +244,7 @@ router.get('/checklists/:packageId', (req, res) => {
 router.post('/checklists/:packageId', action((req, res) => {
   const pid = toInt(req.params.packageId);
   svc.addChecklistItem(pid, { label: req.body.label, labelId: req.body.label_id });
+  log(req, 'checklist.add', { entity: 'packages', id: pid, detail: { label: req.body.label } });
   res.redirect(`/app/checklists/${pid}`);
 }, '/app/prices'));
 
@@ -239,6 +254,7 @@ router.post('/checklists/:packageId/:itemId', action((req, res) => {
   if (req.body.op === 'delete') svc.deleteChecklistItem(pid, itemId);
   else if (req.body.op === 'up' || req.body.op === 'down') svc.moveChecklistItem(pid, itemId, req.body.op === 'up' ? -1 : 1);
   else svc.updateChecklistItem(pid, itemId, { label: req.body.label, labelId: req.body.label_id });
+  log(req, `checklist.${['delete', 'up', 'down'].includes(req.body.op) ? req.body.op : 'edit'}`, { entity: 'packages', id: pid });
   res.redirect(`/app/checklists/${pid}`);
 }, '/app/prices'));
 
@@ -250,12 +266,14 @@ router.get('/promos', (req, res) => {
 
 router.post('/promos', action((req, res) => {
   const code = svc.createPromo(req.body);
+  log(req, 'promo.create', { entity: 'promos', detail: { code, type: req.body.type, value: toInt(req.body.value) } });
   flash(req, 'success', 'flash.promoCreated', { code });
   res.redirect('/app/promos');
 }, '/app/promos'));
 
 router.post('/promos/:id/toggle', action((req, res) => {
   svc.togglePromo(toInt(req.params.id));
+  log(req, 'promo.toggle', { entity: 'promos', id: toInt(req.params.id) });
   res.redirect('/app/promos');
 }, '/app/promos'));
 
@@ -263,17 +281,20 @@ router.post('/promos/:id/toggle', action((req, res) => {
 
 router.post('/membership-plans', action((req, res) => {
   svc.createPlan(req.body);
+  log(req, 'plan.create', { entity: 'membership_plans', detail: { name: req.body.name, price: toInt(req.body.price), washes: toInt(req.body.washes) } });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/memberships#plans');
 }, '/app/memberships'));
 
 router.post('/membership-plans/:id/toggle', action((req, res) => {
   svc.togglePlan(toInt(req.params.id));
+  log(req, 'plan.toggle', { entity: 'membership_plans', id: toInt(req.params.id) });
   res.redirect('/app/memberships#plans');
 }, '/app/memberships'));
 
 router.post('/memberships/:id/cancel', action((req, res) => {
   svc.cancelMembership(toInt(req.params.id));
+  log(req, 'membership.cancel', { entity: 'memberships', id: toInt(req.params.id) });
   flash(req, 'success', 'flash.membershipCancelled');
   res.redirect('/app/memberships');
 }, '/app/memberships'));
@@ -284,6 +305,7 @@ router.post('/settings/loyalty', action((req, res) => {
   const every = toInt(req.body.stamp_every);
   if (every < 0 || every > 50) throw new UserError('err.stampEvery');
   settings.set({ stamp_every: String(every) });
+  log(req, 'settings.loyalty', { detail: { stamp_every: every } });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/settings#loyalty');
 }, '/app/settings'));
@@ -298,12 +320,14 @@ router.get('/stock', (req, res) => {
 
 router.post('/stock', action((req, res) => {
   svc.createSupply(req.body, req.session.user.id);
+  log(req, 'stock.add', { entity: 'supplies', detail: { name: req.body.name } });
   flash(req, 'success', 'flash.saved');
   res.redirect('/app/stock');
 }, '/app/stock'));
 
 router.post('/stock/:id', action((req, res) => {
   svc.updateSupply(toInt(req.params.id), req.body);
+  log(req, 'stock.update', { entity: 'supplies', id: toInt(req.params.id) });
   flash(req, 'success', 'flash.saved');
   res.redirect(`/app/stock#supply-${req.params.id}`);
 }, '/app/stock'));
@@ -312,12 +336,14 @@ router.post('/stock/:id/move', action((req, res) => {
   const r = svc.moveStock(toInt(req.params.id), {
     type: String(req.body.type), qty: req.body.qty, cost: req.body.cost, note: req.body.note, recordExpense: req.body.record_expense === '1',
   }, req.session.user.id);
+  log(req, 'stock.move', { entity: 'supplies', id: toInt(req.params.id), detail: { type: req.body.type, qty: req.body.qty, change: r.change } });
   flash(req, 'success', r.expenseId ? 'flash.stockAndExpense' : 'flash.stockSaved');
   res.redirect(`/app/stock#supply-${req.params.id}`);
 }, '/app/stock'));
 
 router.post('/stock/:id/toggle', action((req, res) => {
   svc.toggleSupply(toInt(req.params.id));
+  log(req, 'stock.toggle', { entity: 'supplies', id: toInt(req.params.id) });
   res.redirect('/app/stock');
 }, '/app/stock'));
 
@@ -333,14 +359,40 @@ router.get('/expenses', (req, res) => {
 
 router.post('/expenses', action((req, res) => {
   svc.addExpense(req.body, req.session.user.id);
+  log(req, 'expense.add', { entity: 'expenses', detail: { category: req.body.category, amount: toInt(req.body.amount), date: req.body.date } });
   flash(req, 'success', 'flash.expenseAdded');
   res.redirect(`/app/expenses?month=${String(req.body.date || today()).slice(0, 7)}`);
 }, '/app/expenses'));
 
 router.post('/expenses/:id/delete', action((req, res) => {
   svc.deleteExpense(toInt(req.params.id));
+  log(req, 'expense.delete', { entity: 'expenses', id: toInt(req.params.id) });
   flash(req, 'success', 'flash.expenseDeleted');
   res.redirect(`/app/expenses${req.body.month ? `?month=${encodeURIComponent(req.body.month)}` : ''}`);
 }, '/app/expenses'));
+
+// ---------- Exports & activity log ----------
+
+router.get('/exports/:type.csv', (req, res) => {
+  const month = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : today().slice(0, 7);
+  const csv = svc.exportCsv(req.params.type, month, { sep: req.lang === 'id' ? ';' : ',' });
+  if (csv === null) return res.status(404).render('error', { title: req.t('error.notFoundTitle'), message: req.t('error.pageMissing') });
+  log(req, 'export', { detail: { type: req.params.type, month } });
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="sparkle-${req.params.type}-${month}.csv"`);
+  res.send(csv);
+});
+
+router.get('/activity', (req, res) => {
+  const filters = {
+    userId: toInt(req.query.user) || null,
+    action: /^[a-z_.]{1,40}$/.test(req.query.action || '') ? req.query.action : '',
+    date: /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || '') ? req.query.date : '',
+  };
+  res.render('app/activity', {
+    title: req.t('act.title'), rows: svc.listAudit(filters), filters, actions: svc.auditActions(),
+    users: db.prepare('SELECT id, name FROM users ORDER BY name').all(),
+  });
+});
 
 module.exports = router;

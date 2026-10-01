@@ -10,5 +10,6 @@ module.exports = {
   ...require('./marketing'),
   ...require('./photos'),
   ...require('./finance'),
+  ...require('./audit'),
   notifications: require('./notifications'),
 };

@@ -3,6 +3,7 @@ const { db } = require('../db');
 const { verifyPassword } = require('../auth');
 const { rateLimit } = require('../security');
 const svc = require('../services');
+const { audit } = svc;
 
 const router = express.Router();
 
@@ -25,11 +26,13 @@ router.post('/login', rateLimit({ name: 'login', max: 10, windowMs: 5 * 60 * 100
   const dest = String(req.body.next || '/app');
   const safeDest = /^\/app(\/|$|\?)/.test(dest) ? dest : '/app';
   if (!u || !verifyPassword(String(req.body.password || ''), u.password_hash)) {
+    audit(u?.id ?? null, 'login.failed', { detail: { username: String(req.body.username || '').slice(0, 40), ip: req.ip } });
     return res.status(401).render('login', { title: req.t('login.title'), next: safeDest, error: req.t('login.error') });
   }
   req.session.regenerate((err) => {
     if (err) return next(err);
     req.session.user = { id: u.id, name: u.name, username: u.username, role: u.role };
+    audit(u.id, 'login', { detail: { ip: req.ip } });
     res.redirect(safeDest);
   });
 });

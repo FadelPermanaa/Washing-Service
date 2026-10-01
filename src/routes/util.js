@@ -1,4 +1,4 @@
-const { UserError } = require('../services');
+const { UserError, audit } = require('../services');
 
 function flash(req, type, key, params = {}) {
   req.session.flash = { type, key, params };
@@ -30,4 +30,9 @@ function notFound(req, res, messageKey = 'error.pageMissing') {
   res.status(404).render('error', { title: req.t('error.notFoundTitle'), message: req.t(messageKey) });
 }
 
-module.exports = { flash, action, notFound, sameOriginReferer };
+/** Write to the activity log as the signed-in user. */
+function log(req, actionName, opts = {}) {
+  audit(req.session?.user?.id, actionName, opts);
+}
+
+module.exports = { flash, action, notFound, sameOriginReferer, log };

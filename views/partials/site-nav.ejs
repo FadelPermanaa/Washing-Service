@@ -10,7 +10,7 @@
         <a href="/"><%= t('status.home') %></a>
       <% } %>
       <%- include('lang-switch') %>
-      <% if (shop.booking_enabled === '1') { %><a class="btn btn-sm" href="/booking"><%= t('site.book') %> <span class="arrow">→</span></a><% } %>
+      <% if (shop.booking_enabled === '1') { %><a class="btn btn-sm" href="/booking"><span class="long-label"><%= t('site.book') %></span><span class="short-label"><%= t('site.bookShort') %></span> <span class="arrow">→</span></a><% } %>
     </nav>
   </div>
 </header>

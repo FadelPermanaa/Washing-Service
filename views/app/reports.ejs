@@ -4,10 +4,30 @@
    const maxRev = Math.max(1, ...r.byDay.map((d) => d.revenue));
    const maxPkg = Math.max(1, ...r.byPackage.map((p) => p.revenue));
    const maxType = Math.max(1, ...r.byType.map((p) => p.count)); %>
+<% const isAdmin = user.role === 'admin'; const monthLabel = new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' }); %>
+<div class="print-only print-head"><strong><%= businessName %></strong> · <%= t('rep.title') %> · <%= monthLabel %></div>
 <div class="topbar">
-  <div><h1><%= t('rep.title') %></h1><div class="sub"><%= new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' }) %></div></div>
-  <form class="actions" method="get"><input type="month" name="month" value="<%= r.month %>" aria-label="<%= t('rep.month') %>"><button class="btn" type="submit"><%= t('rep.show') %></button></form>
+  <div><h1><%= t('rep.title') %></h1><div class="sub"><%= monthLabel %></div></div>
+  <div class="actions">
+    <form method="get" class="inline"><input type="month" name="month" value="<%= r.month %>" aria-label="<%= t('rep.month') %>" data-autosubmit><noscript><button class="btn" type="submit"><%= t('rep.show') %></button></noscript></form>
+    <button class="btn btn-ghost" type="button" data-print><%- include('../partials/icon', { name: 'print' }) %> <%= t('rep.print') %></button>
+  </div>
 </div>
+<% if (isAdmin) { const p = r.profit; %>
+<div class="card profit-card">
+  <div class="card-head"><h2><%= t('rep.profit') %></h2><span class="small muted"><%= t('rep.profitHint') %></span></div>
+  <div class="profit-flow">
+    <div><span class="label"><%= t('rep.received') %></span><strong class="mono"><%= rupiah(p.revenue) %></strong></div>
+    <span class="op">−</span>
+    <div><span class="label"><a href="/app/expenses?month=<%= r.month %>"><%= t('nav.expenses') %></a></span><strong class="mono"><%= rupiah(p.expenses) %></strong></div>
+    <span class="op">−</span>
+    <div><span class="label"><%= t('work.commission') %></span><strong class="mono"><%= rupiah(p.commission) %></strong></div>
+    <span class="op">=</span>
+    <div class="net <%= p.net < 0 ? 'neg' : '' %>"><span class="label"><%= t('rep.net') %></span><strong class="mono"><%= rupiah(p.net) %></strong></div>
+  </div>
+  <% if (p.expensesByCategory.length) { %><p class="small muted" style="margin:12px 0 0"><%= p.expensesByCategory.map((c) => `${t('exp.cat.' + c.category)} ${rupiah(c.total)}`).join(' · ') %></p><% } %>
+</div>
+<% } %>
 <div class="kpis">
   <div class="kpi k-dark"><div class="label"><%= t('rep.revenue') %></div><div class="value mono"><%= rupiah(r.totals.revenue) %></div></div>
   <div class="kpi k-vanilla"><div class="label"><%= t('rep.vehicles') %></div><div class="value mono"><%= r.totals.vehicles %></div></div>
@@ -44,6 +64,24 @@
     </tbody></table>
   </div>
 </div>
+<% const bz = r.busiest; const dows = [1, 2, 3, 4, 5, 6, 0]; %>
+<div class="card" style="margin-top:18px">
+  <div class="card-head"><h2><%= t('rep.busiest') %></h2><span class="small muted"><%= t('rep.busiestHint') %></span></div>
+  <div class="table-wrap">
+    <table class="heatmap" aria-label="<%= t('rep.busiest') %>">
+      <thead><tr><th></th><% for (let h = bz.from; h <= bz.to; h++) { %><th><%= String(h).padStart(2, '0') %></th><% } %></tr></thead>
+      <tbody>
+        <% dows.forEach((d) => { %>
+          <tr><th><%= new Date(2024, 0, 7 + d).toLocaleDateString(locale, { weekday: 'short' }) %></th>
+            <% for (let h = bz.from; h <= bz.to; h++) { const n = bz.cells[d + ':' + h] || 0; const a = n / bz.max; %>
+              <td style="background:<%= n ? `rgba(67,47,46,${(0.08 + a * 0.85).toFixed(2)})` : 'transparent' %>;color:<%= a > 0.5 ? 'var(--vanilla)' : 'var(--mocha)' %>" title="<%= n %>"><%= n || '' %></td>
+            <% } %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
 <div class="card" style="margin-top:18px">
   <h2><%= t('rep.loyalty') %></h2>
   <div class="kpis small-kpis">
@@ -76,4 +114,13 @@
     </table>
   </div>
 </div>
+<% if (isAdmin) { %>
+<div class="card no-print" style="margin-top:18px">
+  <h2><%= t('rep.export') %></h2>
+  <p class="small muted"><%= t('rep.exportHint') %></p>
+  <div class="actions-row">
+    <% exportTypes.forEach((type) => { %><a class="btn btn-sm btn-ghost" href="/app/exports/<%= type %>.csv?month=<%= r.month %>" download><%= t('rep.exp.' + type) %> · CSV</a><% }) %>
+  </div>
+</div>
+<% } %>
 <%- include('../partials/app-end') %>

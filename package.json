@@ -1,7 +1,7 @@
 {
   "name": "washing-service",
-  "version": "1.0.0",
-  "description": "Simple cashier & queue system for a vehicle wash (car & motorcycle)",
+  "version": "2.0.0",
+  "description": "Car & motorcycle wash management: cashier, queue, online booking, washers, WhatsApp, loyalty, stock and reports",
   "main": "server.js",
   "private": true,
   "scripts": {

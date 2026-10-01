@@ -1,7 +1,7 @@
 const express = require('express');
 const { today } = require('../db');
 const svc = require('../services');
-const { flash, action, notFound } = require('./util');
+const { flash, action, notFound, log } = require('./util');
 
 const router = express.Router();
 
@@ -36,6 +36,8 @@ router.get('/transactions/new', (req, res) => {
 
 router.post('/transactions', action((req, res) => {
   const id = svc.createTransaction(req.body, req.session.user.id);
+  const t = svc.getTransaction(id);
+  log(req, 'wash.create', { entity: 'transactions', id, detail: { code: t.code, plate: t.plate, total: t.total, discount: t.discount, promo: t.promo_code, free: t.free_discount > 0, membership: Boolean(t.membership_id) } });
   flash(req, 'success', 'flash.added');
   res.redirect(req.body.print === '1' ? `/app/transactions/${id}?print=1` : '/app/queue');
 }, '/app/transactions/new'));
@@ -89,18 +91,21 @@ router.get('/transactions/:id', (req, res) => {
 
 router.post('/transactions/:id/status', action((req, res) => {
   svc.changeStatus(svc.toInt(req.params.id), String(req.body.action), { washerId: req.body.washer_id, bayId: req.body.bay_id });
+  log(req, `wash.${req.body.action}`, { entity: 'transactions', id: svc.toInt(req.params.id), detail: req.body.washer_id ? { washer_id: svc.toInt(req.body.washer_id), bay_id: svc.toInt(req.body.bay_id) } : null });
   flash(req, 'success', `flash.${req.body.action}`);
   res.redirect(req.body.back === 'detail' ? `/app/transactions/${req.params.id}` : '/app/queue');
 }, '/app/queue'));
 
 router.post('/transactions/:id/payments', action((req, res) => {
   const r = svc.recordPayment(svc.toInt(req.params.id), { amount: req.body.amount, method: String(req.body.method) }, req.session.user.id);
+  log(req, 'payment', { entity: 'transactions', id: svc.toInt(req.params.id), detail: { amount: r.paid, method: req.body.method, due: r.due } });
   flash(req, 'success', r.due > 0 ? 'flash.partPaid' : 'flash.paid', { due: res.locals.rupiah(r.due) });
   res.redirect(`/app/transactions/${req.params.id}`);
 }, '/app/queue'));
 
 router.post('/transactions/:id/pay', action((req, res) => {
   svc.markPaid(svc.toInt(req.params.id), String(req.body.method), req.session.user.id);
+  log(req, 'payment', { entity: 'transactions', id: svc.toInt(req.params.id), detail: { method: req.body.method, full: true } });
   flash(req, 'success', 'flash.paid');
   res.redirect(req.body.back === 'detail' ? `/app/transactions/${req.params.id}` : '/app/queue');
 }, '/app/queue'));
@@ -111,7 +116,7 @@ router.get('/vehicles', (req, res) => {
 });
 
 router.get('/reports', (req, res) => {
-  res.render('app/reports', { title: req.t('rep.title'), report: svc.monthlyReport(req.query.month) });
+  res.render('app/reports', { title: req.t('rep.title'), report: svc.monthlyReport(req.query.month), exportTypes: svc.EXPORT_TYPES });
 });
 
 // ---------- Bookings ----------
@@ -125,10 +130,12 @@ router.post('/bookings/:id', action((req, res) => {
   const id = svc.toInt(req.params.id);
   if (req.body.op === 'check_in') {
     const txId = svc.checkIn(id, req.session.user.id);
+    log(req, 'booking.check_in', { entity: 'bookings', id, detail: { transaction_id: txId } });
     flash(req, 'success', 'flash.checkedIn');
     return res.redirect(req.body.back === 'dashboard' ? '/app' : `/app/transactions/${txId}`);
   }
   const b = svc.staffUpdate(id, String(req.body.op));
+  log(req, `booking.${req.body.op}`, { entity: 'bookings', id, detail: { code: b.code } });
   flash(req, 'success', `flash.booking.${req.body.op}`);
   res.redirect(req.body.back === 'dashboard' ? '/app' : `/app/bookings?date=${b.date}`);
 }, '/app/bookings'));
@@ -163,7 +170,8 @@ router.get('/memberships', (req, res) => {
 });
 
 router.post('/memberships', action((req, res) => {
-  svc.sellMembership(req.body, req.session.user.id);
+  const mId = svc.sellMembership(req.body, req.session.user.id);
+  log(req, 'membership.sell', { entity: 'memberships', id: mId, detail: { plate: svc.normalizePlate(req.body.plate), plan_id: svc.toInt(req.body.plan_id) } });
   flash(req, 'success', 'flash.membershipSold', { plate: svc.normalizePlate(req.body.plate) });
   res.redirect('/app/memberships');
 }, '/app/memberships'));

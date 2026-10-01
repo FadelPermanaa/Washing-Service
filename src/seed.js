@@ -64,6 +64,7 @@ tx(() => {
           paid_at = CASE WHEN payment_status = 'paid' THEN ? END WHERE id = ?`)
         .run(now(d), status === 'waiting' ? null : now(start), status === 'done' ? now(end) : null, status,
           washer?.id ?? null, bay?.id ?? null, status === 'done' ? svc.commissionFor(washer, total) : 0, now(end), id);
+      db.prepare('UPDATE payments SET created_at = ? WHERE transaction_id = ?').run(now(back === 0 ? start : end), id);
       if (status === 'washing') {
         const items = svc.packageChecklist(pkg.id);
         items.forEach((it, k) => db.prepare('INSERT INTO transaction_checks (transaction_id, label, label_id, sort_order, done_at, done_by) VALUES (?, ?, ?, ?, ?, ?)')
