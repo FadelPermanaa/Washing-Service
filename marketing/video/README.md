@@ -7,6 +7,8 @@ Video promosi 30 detik untuk **pemilik usaha cuci mobil/motor**. Semua layar di 
 | [output/sparkle-wash-promo-16x9.mp4](output/sparkle-wash-promo-16x9.mp4) | 1920×1080 | YouTube, website, presentasi |
 | [output/sparkle-wash-promo-9x16.mp4](output/sparkle-wash-promo-9x16.mp4) | 1080×1920 | Instagram Reels, TikTok, YouTube Shorts, Status WA |
 
+Setiap video diberi **watermark Linea.js di pojok** sejak detik pertama (kanan bawah untuk 16:9, kanan atas untuk 9:16) dan ditutup **animasi logo Linea.js** selama 3,6 detik. `build.sh` menambahkannya otomatis lewat [`../brand/`](../brand/README.md).
+
 ## Alur video
 
 | Detik | Adegan | Isi |

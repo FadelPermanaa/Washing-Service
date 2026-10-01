@@ -19,5 +19,8 @@ done
 "$FFMPEG" -y -loglevel error -framerate 30 -i frames/v/%05d.jpg -i audio.wav \
   -c:v libx264 -pix_fmt yuv420p -crf 20 -preset slow -tune animation \
   -c:a aac -b:a 192k -shortest -movflags +faststart output/sparkle-wash-promo-9x16.mp4
+# Linea.js watermark from the first frame + closing animation (see ../brand/README.md)
+FFMPEG="$FFMPEG" sh ../brand/apply-brand.sh output/sparkle-wash-promo-16x9.mp4 h
+FFMPEG="$FFMPEG" sh ../brand/apply-brand.sh output/sparkle-wash-promo-9x16.mp4 v
 rm -rf frames
 echo "Done: output/"
