@@ -5,7 +5,7 @@ Semua video promosi Linea.js memakai branding yang sama:
 - **Watermark di pojok** sejak frame pertama: logo Linea.js + tulisan "Linea.js".
   - 16:9: pojok kanan bawah.
   - 9:16: pojok kanan atas, karena tombol dan teks Reels/TikTok menutupi bagian bawah dan samping kanan.
-- **Animasi penutup 3,6 detik** setelah video selesai: tulisan "dibuat oleh", lalu logo Linea.js dan namanya, dengan efek suara.
+- **Animasi penutup 3,6 detik** setelah video selesai: logo Linea.js dan namanya, dengan efek suara.
 
 ## Isi folder
 
