@@ -120,9 +120,9 @@ src/routes/             public, booking, staff (cashier), jobs (washers), admin
 views/                  EJS pages; views/app/* is the staff area
 public/                 CSS (design tokens: Vanilla Custard, Pale Sky, Deep Mocha) and JS
 test/                   node:test suites (one per phase) + helpers
-marketing/video-prompts AI video prompts for promotional videos
-marketing/video         30-second promo video (16:9 + 9:16) made from real app screens, and its source
 ```
+
+The promo videos and AI video prompts live in [FadelPermanaa/Video-Promosi](https://github.com/FadelPermanaa/Video-Promosi).
 
 ## Adding text
 
